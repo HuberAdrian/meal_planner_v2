@@ -13,8 +13,14 @@ generator client {
   provider = "prisma-client-js"
 }
 
-model Example {
-    id        String   @id @default(cuid())
+model Event {
+    id        String   @id @default(cuid()) // generate a unique string identifier
     createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
+    
+    content   String @db.VarChar(255) // String length in sql is weird, so we set that to a specific character length
+    authorId   String 
+    eventType String
+    eventDate DateTime
+
+		@@index([createdAt]) //will be indexed by authorId
 }
