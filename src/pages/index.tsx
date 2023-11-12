@@ -16,7 +16,8 @@ export default function Home() {
       </Head>
       <main className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-[#2e026d] to-[#15162c]">
         <div>
-          <h1 color="white" > Sign in </h1>
+          <h1 color="grey" > Sign in </h1>
+          <p color="grey">This iis a p element </p>
             <SignInButton />
         </div>
       </main>

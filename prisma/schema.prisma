@@ -15,12 +15,16 @@ generator client {
 
 model Event {
     id        String   @id @default(cuid()) // generate a unique string identifier
-    createdAt DateTime @default(now())
-    
-    content   String @db.VarChar(255) // String length in sql is weird, so we set that to a specific character length
-    authorId   String 
-    eventType String
+    createdAt DateTime @default(now()) 
+
     eventDate DateTime
+    eventType String
+    authorId   String 
+    topic      String @db.VarChar(255)
+    content   String @db.VarChar(255) // String length in sql is weird, so we set that to a specific character length
+    completed Boolean @default(false)
+
+
 
 		@@index([createdAt]) //will be indexed by authorId
 }
