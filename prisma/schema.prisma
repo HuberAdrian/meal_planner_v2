@@ -28,3 +28,34 @@ model Post {
 
 		@@index([createdAt]) //will be indexed by authorId
 }
+
+
+model Meal {
+    id        String   @id @default(cuid()) // generate a unique string identifier
+    createdAt DateTime @default(now()) 
+
+    authorId   String 
+    name      String @db.VarChar(255)
+    counter   Int
+    ingredient1   String? @db.VarChar(255)
+    ingredient2   String? @db.VarChar(255)
+    ingredient3   String? @db.VarChar(255)
+    ingredient4   String? @db.VarChar(255)
+    ingredient5   String? @db.VarChar(255)
+    ingredient6   String? @db.VarChar(255)
+    ingredient7   String? @db.VarChar(255)
+    ingredient8   String? @db.VarChar(255)
+    ingredient9   String? @db.VarChar(255)
+    ingredient10   String? @db.VarChar(255)
+    ingredient11   String? @db.VarChar(255)
+    ingredient12   String? @db.VarChar(255)
+    ingredient13   String? @db.VarChar(255)
+    ingredient14   String? @db.VarChar(255)
+    ingredient15   String? @db.VarChar(255)
+
+    completed Boolean @default(false)
+
+
+
+		@@index([createdAt]) //will be indexed by authorId
+}
