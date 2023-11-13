@@ -8,7 +8,7 @@ import { api } from "~/utils/api";
 export default function Home() {
   const hello = api.example.hello.useQuery({ text: "from tRPC" });
 
-  const { data } = api.example.getAll.useQuery();
+  const { data } = api.post.getAll.useQuery();
   
   const user = useUser();
 
@@ -26,6 +26,16 @@ export default function Home() {
           <div>
             {!user && <SignInButton />}{!!user && <SignOutButton />}
           </div>
+          <div>
+            <h2 className="text-4xl" >Posts</h2>
+            <ul>
+              {data?.map((post) => (
+                <li key={post.id}>
+                    {post.content}
+                </li>
+              ))}
+            </ul>
+            </div>
         </div>
       </main>
     </>
