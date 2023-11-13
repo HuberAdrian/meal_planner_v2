@@ -1,6 +1,7 @@
-import { SignInButton } from "@clerk/nextjs";
+import { SignInButton, useUser, SignOutButton } from "@clerk/nextjs";
 import Head from "next/head";
 import Link from "next/link";
+
 
 import { api } from "~/utils/api";
 
@@ -9,6 +10,8 @@ export default function Home() {
 
   const { data } = api.example.getAll.useQuery();
   
+  const user = useUser();
+
   return (
     <>
       <Head>
@@ -18,9 +21,11 @@ export default function Home() {
       </Head>
       <main className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-[#2e026d] to-[#15162c]">
         <div>
-          <h1 color="grey" > Sign in </h1>
+          <h1 color="grey" > Site test </h1>
           <p color="grey">This iis a p element </p>
-            <SignInButton />
+          <div>
+            {!user && <SignInButton />}{!!user && <SignOutButton />}
+          </div>
         </div>
       </main>
     </>
