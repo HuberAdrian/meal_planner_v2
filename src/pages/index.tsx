@@ -87,9 +87,14 @@ const Day: React.FC<DayProps> = ({ date, posts }) => {
           <button className="px-4 py-2 bg-blue-500 text-white rounded self-start sm:self-auto">Edit</button>
         </div>
       ))}
+      <button className="w-10 h-10 bg-blue-500 text-white rounded-full flex items-center justify-center mt-4">
+      +
+    </button>
     </div>
   );
 };
+
+
 
 // This function groups posts by their eventDate, and returns an object where each key is a date and the value is an array of posts for that date
 function groupPostsByDate(posts: Post[]): GroupedPosts {
