@@ -17,8 +17,8 @@ model Post {
     id        String   @id @default(cuid()) // generate a unique string identifier
     createdAt DateTime @default(now()) 
 
-    eventDate DateTime
-    eventType String
+    eventDate DateTime 
+    eventType String //meal or event
     authorId   String 
     topic      String @db.VarChar(255)
     content   String @db.VarChar(255) // String length in sql is weird, so we set that to a specific character length
@@ -26,7 +26,7 @@ model Post {
 
 
 
-		@@index([createdAt]) //will be indexed by authorId
+		@@index([createdAt]) //will be indexed by createdAt
 }
 
 
