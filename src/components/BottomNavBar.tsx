@@ -11,7 +11,7 @@ type BottomNavBarProps = {
 const BottomNavBar: React.FC<BottomNavBarProps> = ({ activePage }) => {
   return (
     <div className="fixed bottom-0 w-full bg-gray-100 shadow-md flex items-center justify-around p-4">
-      <Link legacyBehavior href="/AddMeal">
+      <Link legacyBehavior href="/addevent">
         <a><GiMeal className={`text-2xl ${activePage === 'home' ? 'text-blue-500 font-bold' : 'text-gray-500'}`} /></a>
       </Link>
       <Link legacyBehavior href="/grocery-store">

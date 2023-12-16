@@ -37,9 +37,9 @@ const AddEvent = () => {
 
   const { data, isLoading } = api.meal.getAll.useQuery();
 
-  if (isLoading) return <div>Loading...</div>;
+  if (isLoading) return <Loading />;
   if(!data) {
-    return <div>Error</div>;
+    return <Error />;
   }
 
   const mealOptions = [
@@ -133,6 +133,7 @@ const AddEvent = () => {
         </button>
         </div>
       </form>
+        <BottomNavBar activePage='/' />
     </div>
   );
 };
