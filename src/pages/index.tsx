@@ -59,7 +59,7 @@ export default function Home() {
             ))}
           </ul>
         </div>
-        <BottomNavBar activePage="home" />  
+        <BottomNavBar activePage="calendar" />  
       </main>
     </>
   );
@@ -76,7 +76,7 @@ const Day: React.FC<DayProps> = ({ date, posts }) => {
 
   return (
     <div className="flex flex-col items-center px-4">
-      <h2 className="text-2xl font-bold">{`${weekday}, der ${dayMonth}`}</h2>
+      <h2 className="text-2xl font-bold">{`${weekday}, ${dayMonth}`}</h2>
       {posts.map((post, index) => (
         <div key={index} className="flex flex-col sm:flex-row items-center justify-between w-full my-4">
           <div className="text-lg text-primary-100 font-bold mb-2 sm:mb-0">{post.eventType}</div>
