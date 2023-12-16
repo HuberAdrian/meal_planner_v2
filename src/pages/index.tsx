@@ -1,6 +1,7 @@
 import { SignInButton, useUser, SignOutButton } from "@clerk/nextjs";
 import Head from "next/head";
 import Link from "next/link";
+import BottomNavBar from "~/components/BottomNavBar";
 import { Error, Loading } from "~/components/loading";
 import { api } from "~/utils/api";
 
@@ -58,6 +59,7 @@ export default function Home() {
             ))}
           </ul>
         </div>
+        <BottomNavBar activePage="home" />  
       </main>
     </>
   );
