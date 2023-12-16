@@ -5,7 +5,7 @@ const UserProfilePage = () => (
     <>
     <UserProfile path="/user-profile" routing="path" />
     <BottomNavBar activePage="user" />
-        </>
+    </>
 );
  
 export default UserProfilePage;

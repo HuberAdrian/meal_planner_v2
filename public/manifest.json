@@ -1,0 +1,15 @@
+{
+    "short_name": "Organisation",
+    "name": "Organisationsapp für Vivien",
+    "icons": [
+      {
+        "src": "/favicon.ico",
+        "sizes": "48x48",
+        "type": "icon/ico"
+      }
+    ],
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#ffffff",
+    "theme_color": "#000000"
+  }
