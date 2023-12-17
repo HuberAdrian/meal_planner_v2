@@ -4,6 +4,7 @@ import Link from "next/link";
 import BottomNavBar from "~/components/BottomNavBar";
 import { Error, Loading } from "~/components/loading";
 import { api } from "~/utils/api";
+import { useState } from "react";
 
 
 type Post = {
@@ -24,14 +25,38 @@ type DayProps = {
   posts: Post[];
 };
 
+const LandingPage: React.FC = () => {
+  const [showSignIn, setShowSignIn] = useState(false);
+
+  const handleClick = () => {
+    setShowSignIn(true);
+  };
+
+  return (
+    <div className="flex flex-col items-center justify-center min-h-screen bg-primary-400 p-4">
+      <h1 className="text-4xl mb-4">Welcome to our app</h1>
+      <img src="your-image-url" alt="Welcome" />
+      {showSignIn ? <SignInButton /> :
+        <button
+          className="mt-4 px-4 py-2 bg-blue-500 text-white rounded"
+          onClick={handleClick}
+        >
+          Sign In
+        </button>
+      }
+    </div>
+  );
+    };
 
 
 export default function Home() {
+  
+  const user = useUser();
+  if (!user) return <LandingPage />;
+
   const hello = api.example.hello.useQuery({ text: "from tRPC" });
 
   const { data, isLoading } = api.post.getAll.useQuery();
-  
-  const user = useUser();
 
   if (isLoading) return <Loading />;
   if(!data) return <Error />;
