@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
 import BottomNavBar from '~/components/BottomNavBar';
+import { type NextPage } from "next";
 
 type GroceryItem = {
   id: number;
@@ -35,7 +36,7 @@ const initialGroceries: GroceryItem[] = [
   // Add more items as needed
 ];
 
-export default function grocerylist() {
+const grocerylist: NextPage = () =>   {
     const [groceries, setGroceries] = useState<GroceryItem[]>(initialGroceries);
 
     const handleCheck = (id: number) => {
@@ -75,3 +76,5 @@ export default function grocerylist() {
       </div>
     );
   }
+
+export default grocerylist;

@@ -1,3 +1,4 @@
+import { type NextPage } from "next";
 import { useState } from 'react';
 import { FaArrowLeft, FaArrowRight } from 'react-icons/fa';
 import { Bar } from 'react-chartjs-2';
@@ -19,7 +20,7 @@ const initialMeals: Meal[] = [
   // Add more meals as needed
 ];
 
-export default function history() {
+const history: NextPage = () =>   {
   const [meals, setMeals] = useState<Meal[]>(initialMeals);
   const [month, setMonth] = useState<number>(new Date().getMonth());
 
@@ -73,3 +74,5 @@ export default function history() {
     </div>
   );
 }
+
+export default history;

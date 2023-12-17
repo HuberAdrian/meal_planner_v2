@@ -62,8 +62,10 @@ export default function addmeal() {
 */
 import { useState } from 'react';
 import BottomNavBar from '~/components/BottomNavBar';
+import { type NextPage } from "next";
 
-export default function AddMeal() {
+
+const AddMeal: NextPage = () =>  {
   const [meal, setMeal] = useState('');
   const [ingredients, setIngredients] = useState(['']);
 
@@ -111,3 +113,5 @@ export default function AddMeal() {
     </div>
   );
 }
+
+export default AddMeal;
