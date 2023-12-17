@@ -3,6 +3,7 @@ import Link from "next/link";
 import BottomNavBar from "~/components/BottomNavBar";
 import { Error, Loading } from "~/components/loading";
 import { api } from "~/utils/api";
+import { type NextPage } from "next";
 
 type Meal = {
   id: string;
@@ -28,7 +29,7 @@ type Meal = {
   completed: boolean;
 };
 
-const AddEvent = () => {
+const AddEvent: NextPage = () => {
   const [meal, setMeal] = useState<string>('');
   const [time, setTime] = useState<string>('');
   const [title, setTitle] = useState<string>('');

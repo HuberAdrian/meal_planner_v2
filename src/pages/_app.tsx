@@ -8,7 +8,7 @@ import { FaCalendar } from "react-icons/fa";
 
 const MyApp: AppType = ({ Component, pageProps }) => {
   return(<ClerkProvider {...pageProps}>
-      <Component {...pageProps} />;
+      <Component {...pageProps} />
     </ClerkProvider>)
 };
 
