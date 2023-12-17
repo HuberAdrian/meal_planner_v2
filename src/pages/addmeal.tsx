@@ -60,14 +60,13 @@ export default function addmeal() {
   );
 }
 */
-
 import { useState } from 'react';
 
-export default function addmeal() {
+export default function AddMeal() {
   const [meal, setMeal] = useState('');
   const [ingredients, setIngredients] = useState(['']);
 
-  const onSubmit = (e:any) => {
+  const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     console.log({ meal, ingredients });
     // Logic for submitting the form values goes here
