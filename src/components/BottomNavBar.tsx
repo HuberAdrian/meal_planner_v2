@@ -21,7 +21,7 @@ const BottomNavBar: React.FC<BottomNavBarProps> = ({ activePage }) => {
         <a><FaCalendar className={`text-2xl ${activePage === 'calendar' ? 'text-blue-500 font-bold' : 'text-gray-500'}`} /></a>
       </Link>
       <Link legacyBehavior href="/history">
-        <a><IoIosStats className={`text-2xl ${activePage === 'stats' ? 'text-blue-500 font-bold' : 'text-gray-500'}`} /></a>
+        <a><IoIosStats className={`text-2xl ${activePage === 'history' ? 'text-blue-500 font-bold' : 'text-gray-500'}`} /></a>
       </Link>
       <Link legacyBehavior href="/user-profile">
         <a><FaUser className={`text-2xl ${activePage === 'user' ? 'text-blue-500 font-bold' : 'text-gray-500'}`} /></a>
