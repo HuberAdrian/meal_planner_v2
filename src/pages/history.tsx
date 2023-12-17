@@ -1,3 +1,4 @@
+"use client"
 import { type NextPage } from "next";
 import { useState } from 'react';
 import { FaArrowLeft, FaArrowRight } from 'react-icons/fa';

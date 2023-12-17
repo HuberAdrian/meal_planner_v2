@@ -1,3 +1,4 @@
+"use client"
 import { useState } from 'react';
 import { FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
 import BottomNavBar from '~/components/BottomNavBar';
