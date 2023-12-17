@@ -20,7 +20,7 @@ const BottomNavBar: React.FC<BottomNavBarProps> = ({ activePage }) => {
       <Link legacyBehavior href="/">
         <a><FaCalendar className={`text-2xl ${activePage === 'calendar' ? 'text-blue-500 font-bold' : 'text-gray-500'}`} /></a>
       </Link>
-      <Link legacyBehavior href="/stats">
+      <Link legacyBehavior href="/addmeal">
         <a><IoIosStats className={`text-2xl ${activePage === 'stats' ? 'text-blue-500 font-bold' : 'text-gray-500'}`} /></a>
       </Link>
       <Link legacyBehavior href="/user-profile">
