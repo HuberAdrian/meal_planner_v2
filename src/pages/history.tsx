@@ -1,6 +1,6 @@
-"use client"
-import { type NextPage } from "next";
+"use client";
 import { useState } from 'react';
+import { type NextPage } from "next";
 import { FaArrowLeft, FaArrowRight } from 'react-icons/fa';
 import { Bar } from 'react-chartjs-2';
 import BottomNavBar from '~/components/BottomNavBar';
@@ -21,7 +21,7 @@ const initialMeals: Meal[] = [
   // Add more meals as needed
 ];
 
-const history: NextPage = () =>   {
+const History: NextPage = () =>   {
   const [meals, setMeals] = useState<Meal[]>(initialMeals);
   const [month, setMonth] = useState<number>(new Date().getMonth());
 
@@ -76,4 +76,4 @@ const history: NextPage = () =>   {
   );
 }
 
-export default history;
+export default History;

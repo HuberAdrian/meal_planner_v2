@@ -1,4 +1,4 @@
-"use client"
+"use client";
 import { useState } from 'react';
 import { FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
 import BottomNavBar from '~/components/BottomNavBar';
@@ -37,7 +37,7 @@ const initialGroceries: GroceryItem[] = [
   // Add more items as needed
 ];
 
-const grocerylist: NextPage = () =>   {
+const Grocerylist: NextPage = () =>   {
     const [groceries, setGroceries] = useState<GroceryItem[]>(initialGroceries);
 
     const handleCheck = (id: number) => {
@@ -78,4 +78,4 @@ const grocerylist: NextPage = () =>   {
     );
   }
 
-export default grocerylist;
+export default Grocerylist;

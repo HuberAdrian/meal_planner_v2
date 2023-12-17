@@ -1,4 +1,4 @@
-"use client"
+
 /*
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
@@ -61,6 +61,7 @@ export default function addmeal() {
   );
 }
 */
+"use client";
 import { useState } from 'react';
 import BottomNavBar from '~/components/BottomNavBar';
 import { type NextPage } from "next";
