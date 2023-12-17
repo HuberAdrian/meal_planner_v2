@@ -61,6 +61,7 @@ export default function addmeal() {
 }
 */
 import { useState } from 'react';
+import BottomNavBar from '~/components/BottomNavBar';
 
 export default function AddMeal() {
   const [meal, setMeal] = useState('');
@@ -73,6 +74,7 @@ export default function AddMeal() {
   };
 
   return (
+    <div>
     <div className="container mx-auto p-4">
       <h1 className="text-2xl mb-4">Add Meal</h1>
       
@@ -104,6 +106,8 @@ export default function AddMeal() {
           Save
         </button>
       </form>
+    </div>
+    <BottomNavBar activePage="addmeal" />
     </div>
   );
 }
