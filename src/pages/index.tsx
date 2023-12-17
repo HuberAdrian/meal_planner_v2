@@ -17,9 +17,7 @@ type Post = {
   completed: boolean;
 };
 
-type GroupedPosts = {
-  [date: string]: Post[];
-};
+type GroupedPosts = Record<string, Post[]>;
 
 type DayProps = {
   date: string;
