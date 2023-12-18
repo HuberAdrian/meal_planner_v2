@@ -56,7 +56,6 @@ export default function Home() {
   
   const user = useUser();
   if (!user.isSignedIn) return <LandingPage />;
-  const hello = api.example.hello.useQuery({ text: "from tRPC" });
 
   const { data, isLoading } = api.post.getAll.useQuery();
 
@@ -64,6 +63,9 @@ export default function Home() {
   if(!data) return <Error />;
 
   const groupedPosts = groupPostsByDate(data);
+
+  const nextTwoWeeks = generateNextTwoWeeks();
+
 
   return (
     <>
@@ -76,8 +78,8 @@ export default function Home() {
         <div className=" w-full sm:max-w-md mx-auto rounded-xl overflow-y-scroll overflow-x-hidden">
           <h2 className="text-4xl text-center py-4 sticky top-0 z-10">Kalender</h2>
           <ul className="px-4 py-2">
-            {Object.entries(groupedPosts).map(([date, posts], index) => (
-              <Day key={index} date={date} posts={posts} />
+            {nextTwoWeeks.map((date, index) => (
+              <Day key={index} date={date} posts={groupedPosts[date] || []} />
             ))}
           </ul>
         </div>
@@ -91,9 +93,6 @@ export default function Home() {
 
 const Day: React.FC<DayProps> = ({ date, posts }) => {
   const router = useRouter();
-  if (!posts) {
-    return <Loading />;
-  }
   // get the date 
   const formattedDate = new Date(date).toLocaleDateString('de-DE', { weekday: 'long', day: '2-digit', month: '2-digit' });
   const [weekday, dayMonth] = formattedDate.split(', ');
@@ -139,4 +138,18 @@ return posts.reduce((groupedPosts: GroupedPosts, post) => {
   groupedPosts[date]?.push(post);
   return groupedPosts;
 }, {} as GroupedPosts);
+}
+
+function generateNextTwoWeeks(): string[] {
+  let dates: string[] = [];
+  for(let i = 0; i <= 14; i++) {
+    let date = new Date();
+    date.setDate(date.getDate() + i);
+    let dateString = date.toISOString().split('T')[0];
+    // check if dateString is of type string
+    if (typeof dateString == 'string') {
+    dates.push(dateString);
+    }
+  }
+  return dates;
 }
