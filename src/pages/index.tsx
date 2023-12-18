@@ -73,7 +73,7 @@ export default function Home() {
           <div className="flex justify-between items-center px-4 py-2">
             {!user.isSignedIn && <SignInButton />}{!!user.isSignedIn && <SignOutButton />}
           </div>
-          <h2 className="text-4xl text-center py-4">Posts</h2>
+          <h2 className="text-4xl text-center py-4 sticky top-0 z-10">Posts</h2>
           <ul className="px-4 py-2">
             {Object.entries(groupedPosts).map(([date, posts], index) => (
               <Day key={index} date={date} posts={posts} />
@@ -96,16 +96,15 @@ const Day: React.FC<DayProps> = ({ date, posts }) => {
   const [weekday, dayMonth] = formattedDate.split(', ');
 
   return (
-    <div className="flex flex-col items-center px-4">
-      <h2 className="text-2xl font-bold">{`${weekday}, ${dayMonth}`}</h2>
+    <div className="flex flex-col items-start px-4">
+      <h2 className="text-2xl font-bold self-start">{`${weekday}, ${dayMonth}`}</h2>
       {posts.map((post, index) => (
-        <div key={index} className="flex flex-col sm:flex-row items-center justify-between w-full my-4">
-          <div className="text-lg text-primary-100 font-bold mb-2 sm:mb-0">{post.eventType}</div>
-          <div className="flex items-center mb-2 sm:mb-0">
-            <div className="ml-4">
-              <h2 className="text-xl font-bold">{post.topic}</h2>
-              <p className="text-sm text-gray-500">{post.content}</p>
-            </div>
+        <div key={index} className="flex items-start justify-between w-full my-1 border rounded p-4">
+          <div className="text-lg text-primary-100 font-bold mb-2 sm:mb-0 self-center transform rotate-90">{post.eventType}</div>
+          <img src="your-image-url" alt="Post" className="w-12 h-12" />
+          <div className="flex flex-col ">
+            <h2 className="text-xl font-bold">{post.topic}</h2>
+            <p className="text-sm text-gray-500">{post.content}</p>
           </div>
           <button className="px-4 py-2 bg-blue-500 text-white rounded self-start sm:self-auto">Edit</button>
         </div>
