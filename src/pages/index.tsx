@@ -14,10 +14,9 @@ type Post = {
   createdAt: Date;
   eventDate: Date;
   eventType: string;
-  authorId: string;
   topic: string;
   content: string;
-  completed: boolean;
+  deleted: boolean;
 };
 
 type GroupedPosts = Record<string, Post[]>;
@@ -91,13 +90,13 @@ export default function Home() {
 
 
 const Day: React.FC<DayProps> = ({ date, posts }) => {
+  const router = useRouter();
   if (!posts) {
     return <Loading />;
   }
   // get the date 
   const formattedDate = new Date(date).toLocaleDateString('de-DE', { weekday: 'long', day: '2-digit', month: '2-digit' });
   const [weekday, dayMonth] = formattedDate.split(', ');
-  const router = useRouter();
 
   return (
     <div className="flex flex-col items-center px-4">
@@ -117,7 +116,7 @@ const Day: React.FC<DayProps> = ({ date, posts }) => {
       ))}
       <button 
         className="w-10 h-10 border text-white flex rounded-full items-center justify-center mt-4"
-        onClick={() => router.push(`/addevent/${date}`)}
+        onClick={() => { void( async () => {await router.push(`/addevent/${date}`)})();}}
       >
         <FiPlus className="items-center justify-center" />
       </button>
