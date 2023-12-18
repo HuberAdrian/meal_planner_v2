@@ -5,6 +5,7 @@ import BottomNavBar from "~/components/BottomNavBar";
 import { Error, Loading } from "~/components/loading";
 import { api } from "~/utils/api";
 import { useState } from "react";
+import { FiPlus, FiX } from "react-icons/fi";
 
 
 type Post = {
@@ -68,11 +69,8 @@ export default function Home() {
         <meta name="description" content="Organisationsapp für Vivien" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
-      <main className="flex flex-col sm:flex-row min-h-screen items-center justify-center bg-primary-400 p-4">
-        <div className=" w-full sm:max-w-md mx-auto rounded-xl shadow-md overflow-hidden">
-          <div className="flex justify-between items-center px-4 py-2">
-            {!user.isSignedIn && <SignInButton />}{!!user.isSignedIn && <SignOutButton />}
-          </div>
+      <main className="flex flex-col sm:flex-row min-h-screen items-center bg-primary-400 p-4">
+        <div className=" w-full sm:max-w-md mx-auto rounded-xl overflow-y-scroll overflow-x-hidden">
           <h2 className="text-4xl text-center py-4 sticky top-0 z-10">Posts</h2>
           <ul className="px-4 py-2">
             {Object.entries(groupedPosts).map(([date, posts], index) => (
@@ -96,25 +94,27 @@ const Day: React.FC<DayProps> = ({ date, posts }) => {
   const [weekday, dayMonth] = formattedDate.split(', ');
 
   return (
-    <div className="flex flex-col items-start px-4">
+    <div className="flex flex-col items-center px-4">
       <h2 className="text-2xl font-bold self-start">{`${weekday}, ${dayMonth}`}</h2>
       {posts.map((post, index) => (
-        <div key={index} className="flex items-start justify-between w-full my-1 border rounded p-4">
-          <div className="text-lg text-primary-100 font-bold mb-2 sm:mb-0 self-center transform rotate-90">{post.eventType}</div>
-          <img src="your-image-url" alt="Post" className="w-12 h-12" />
-          <div className="flex flex-col ">
+        <div key={index} className="flex items-start rounded-lg justify-between w-full my-1 border p-3">
+          <div className="text-lg text-primary-100 font-bold self-center transform -rotate-90 flex-shrink-0 mr-2">{post.eventType}</div>
+          <img src="your-image-url" alt="Post" className="w-12 h-12 flex-shrink-0 mr-5" />
+          <div className="flex flex-col flex-grow">
             <h2 className="text-xl font-bold">{post.topic}</h2>
             <p className="text-sm text-gray-500">{post.content}</p>
           </div>
-          <button className="px-4 py-2 bg-blue-500 text-white rounded self-start sm:self-auto">Edit</button>
+          <button className="pl-4 pr-0 py-2 text-white rounded self-start sm:self-auto flex-shrink-0">
+            <FiX className="text-2xl"/>
+          </button>
         </div>
       ))}
-      <button className="w-10 h-10 bg-blue-500 text-white rounded-full flex items-center justify-center mt-4">
-      +
-    </button>
+      <button className="w-10 h-10 border text-white flex rounded-full items-center justify-center mt-4">
+        <FiPlus className="items-center justify-center" />
+      </button>
     </div>
   );
-};
+}
 
 
 
