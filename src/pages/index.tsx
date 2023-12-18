@@ -27,7 +27,7 @@ type DayProps = {
   posts: Post[];
 };
 
-
+// landing page if user is not signed in
 const LandingPage: React.FC = () => {
   const [currentImage, setCurrentImage] = useState(0);
   const images = ["/Vivien.png", "/Adrian.png", "/Benni.png"];
@@ -49,6 +49,9 @@ const LandingPage: React.FC = () => {
     </div>
   );
 };
+
+
+
 
 export default function Home() {
   
@@ -84,6 +87,7 @@ export default function Home() {
     </>
   );
 }
+
 
 
 const Day: React.FC<DayProps> = ({ date, posts }) => {
