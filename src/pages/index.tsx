@@ -6,6 +6,7 @@ import { Error, Loading } from "~/components/loading";
 import { api } from "~/utils/api";
 import { useState } from "react";
 import { FiPlus, FiX } from "react-icons/fi";
+import { useRouter } from 'next/router';
 
 
 type Post = {
@@ -92,6 +93,7 @@ const Day: React.FC<DayProps> = ({ date, posts }) => {
   // get the date 
   const formattedDate = new Date(date).toLocaleDateString('de-DE', { weekday: 'long', day: '2-digit', month: '2-digit' });
   const [weekday, dayMonth] = formattedDate.split(', ');
+  const router = useRouter();
 
   return (
     <div className="flex flex-col items-center px-4">
@@ -109,7 +111,10 @@ const Day: React.FC<DayProps> = ({ date, posts }) => {
           </button>
         </div>
       ))}
-      <button className="w-10 h-10 border text-white flex rounded-full items-center justify-center mt-4">
+      <button 
+        className="w-10 h-10 border text-white flex rounded-full items-center justify-center mt-4"
+        onClick={() => router.push(`/addevent/${date}`)}
+      >
         <FiPlus className="items-center justify-center" />
       </button>
     </div>

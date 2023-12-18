@@ -5,6 +5,7 @@ import BottomNavBar from "~/components/BottomNavBar";
 import { Error, Loading } from "~/components/loading";
 import { api } from "~/utils/api";
 import { type NextPage } from "next";
+import { useRouter } from 'next/router';
 
 type Meal = {
   id: string;
@@ -31,6 +32,8 @@ type Meal = {
 };
 
 const AddEvent: NextPage = () => {
+  const router = useRouter();
+  const { date } = router.query;
   const [meal, setMeal] = useState<string>('');
   const [time, setTime] = useState<string>('');
   const [title, setTitle] = useState<string>('');
@@ -38,6 +41,9 @@ const AddEvent: NextPage = () => {
   const [eventTime, setEventTime] = useState<string>('');
 
   const { data, isLoading } = api.meal.getAll.useQuery();
+
+  const formattedDate = new Date(date as string).toLocaleDateString('de-DE', { weekday: 'long', day: '2-digit', month: '2-digit' });
+
 
   if (isLoading) return <Loading />;
   if(!data) {
@@ -48,7 +54,6 @@ const AddEvent: NextPage = () => {
     "Frühstück",
     "Mittagessen",
     "Abendessen",
-    "Snack",
   ];
   /*
   const handleSubmit = async (e: FormEvent) => {
@@ -69,24 +74,44 @@ const AddEvent: NextPage = () => {
         console.log(data);
         }
     
-
-  return (
-    <div>
-      <h1 className="text-2xl font-bold mb-4">Event hinzufügen</h1>
-      <form onSubmit={printMealNames/*handleSubmit*/}>
+        return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-primary-400 p-4">
+      <h1 className="text-4xl font-bold mb-4 text-white">{formattedDate}</h1>
+      <form onSubmit={(e) => e.preventDefault()} className="w-full sm:max-w-md mx-auto rounded-xl overflow-y-scroll overflow-x-hidden p-4">
+        <div className="border p-4 rounded-lg ">
         <div className="mb-4">
-          <label className="block text-gray-700 font-bold mb-2" htmlFor="meal">
+          <label className="block text-gray-700 font-bold mb-2" htmlFor="title">
+            Titel
+          </label>
+          <input
+            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+            id="title"
+            type="text"
+            placeholder="Titel"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            required
+          />
+        </div>
+        <div className="mb-4">
+          <label className="block text-gray-700 font-bold mb-2 " htmlFor="meal">
             Essen hinzufügen
           </label>
-          <select value={meal} onChange={e => setMeal(e.target.value)}>
-            <option value="">Select a meal</option>
+          <div className="flex w-full items-center justify-between">
             {mealOptions.map((option, index) => (
-              <option key={index} value={option}>
+              <button 
+                key={index} 
+                onClick={() => setMeal(option)}
+                className={`p-2 rounded ${meal === option ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+              >
                 {option}
-              </option>
+              </button>
             ))}
-          </select>
+            </div>
+          </div>
         </div>
+        <h3 className="text-xl text-center font-bold my-8 text-white">------- oder -------</h3>
+        <div className="border p-4 rounded-lg ">
         <div className="mb-4">
           <label className="block text-gray-700 font-bold mb-2" htmlFor="title">
             Titel
@@ -128,14 +153,15 @@ const AddEvent: NextPage = () => {
             required
           />
         </div>
-        <div className="flex items-center justify-between">
+        </div>
+        <div className="flex items-center justify-center w-full mt-4">
         <button
-            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline" type="submit">
+            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 w-full rounded-lg focus:outline-none focus:shadow-outline" type="submit">
                 Speichern
         </button>
         </div>
       </form>
-        <BottomNavBar activePage='/' />
+        <BottomNavBar activePage='calendar' />
     </div>
   );
 };
