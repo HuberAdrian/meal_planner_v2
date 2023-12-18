@@ -25,35 +25,33 @@ type DayProps = {
   posts: Post[];
 };
 
+
 const LandingPage: React.FC = () => {
-  const [showSignIn, setShowSignIn] = useState(false);
+  const [currentImage, setCurrentImage] = useState(0);
+  const images = ["/Vivien.png", "/Adrian.png", "/Benni.png"];
 
   const handleClick = () => {
-    setShowSignIn(true);
+    setCurrentImage((currentImage + 1) % images.length);
   };
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-primary-400 p-4">
-      <h1 className="text-4xl mb-4">Welcome to our app</h1>
-      <img src="your-image-url" alt="Welcome" />
-      {showSignIn ? <SignInButton /> :
-        <button
-          className="mt-4 px-4 py-2 bg-blue-500 text-white rounded"
-          onClick={handleClick}
-        >
-          Sign In
-        </button>
-      }
+      <h1 className="text-4xl mb-4">geh weg</h1>
+      <img 
+        src={images[currentImage]} 
+        alt="Welcome" 
+        onClick={handleClick} 
+        className="object-cover w-auto h-auto max-w-[350px] max-h-[350px]"
+      />
+      <SignInButton>Login</SignInButton>
     </div>
   );
-    };
-
+};
 
 export default function Home() {
   
   const user = useUser();
-  if (!user) return <LandingPage />;
-
+  if (!user.isSignedIn) return <LandingPage />;
   const hello = api.example.hello.useQuery({ text: "from tRPC" });
 
   const { data, isLoading } = api.post.getAll.useQuery();
@@ -73,7 +71,7 @@ export default function Home() {
       <main className="flex flex-col sm:flex-row min-h-screen items-center justify-center bg-primary-400 p-4">
         <div className=" w-full sm:max-w-md mx-auto rounded-xl shadow-md overflow-hidden">
           <div className="flex justify-between items-center px-4 py-2">
-            {!user && <SignInButton />}{!!user && <SignOutButton />}
+            {!user.isSignedIn && <SignInButton />}{!!user.isSignedIn && <SignOutButton />}
           </div>
           <h2 className="text-4xl text-center py-4">Posts</h2>
           <ul className="px-4 py-2">
