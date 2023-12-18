@@ -72,7 +72,7 @@ export default function Home() {
       </Head>
       <main className="flex flex-col sm:flex-row min-h-screen items-center bg-primary-400 p-4">
         <div className=" w-full sm:max-w-md mx-auto rounded-xl overflow-y-scroll overflow-x-hidden">
-          <h2 className="text-4xl text-center py-4 sticky top-0 z-10">Posts</h2>
+          <h2 className="text-4xl text-center py-4 sticky top-0 z-10">Kalender</h2>
           <ul className="px-4 py-2">
             {Object.entries(groupedPosts).map(([date, posts], index) => (
               <Day key={index} date={date} posts={posts} />
@@ -101,7 +101,7 @@ const Day: React.FC<DayProps> = ({ date, posts }) => {
       {posts.map((post, index) => (
         <div key={index} className="flex items-start rounded-lg justify-between w-full my-1 border p-3">
           <div className="text-lg text-primary-100 font-bold self-center transform -rotate-90 flex-shrink-0 mr-2">{post.eventType}</div>
-          <img src="your-image-url" alt="Post" className="w-12 h-12 flex-shrink-0 mr-5" />
+          <img src={post.eventType === "meal"? "/meal_default.png" : "/event_default.png"} alt="Post" className="w-12 h-12 bg-white flex-shrink-0 mr-5" />
           <div className="flex flex-col flex-grow">
             <h2 className="text-xl font-bold">{post.topic}</h2>
             <p className="text-sm text-gray-500">{post.content}</p>

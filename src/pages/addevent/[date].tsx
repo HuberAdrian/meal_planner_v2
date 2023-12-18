@@ -31,6 +31,18 @@ type Meal = {
   completed: boolean;
 };
 
+// write a type definizion for the Post model
+type Post = {
+  id: string;
+  createdAt: Date;
+  eventDate: Date;
+  eventType: string;
+  authorId: string;
+  topic: string;
+  content: string;
+  completed: boolean;
+};
+
 const AddEvent: NextPage = () => {
   const router = useRouter();
   const { date } = router.query;
@@ -50,7 +62,7 @@ const AddEvent: NextPage = () => {
     return <Error />;
   }
 
-  const mealOptions = [
+  const timeOptions = [
     "Frühstück",
     "Mittagessen",
     "Abendessen",
@@ -75,13 +87,13 @@ const AddEvent: NextPage = () => {
         }
     
         return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-primary-400 p-4">
+      <div className="flex flex-col items-center p-4 pt-14 min-h-screen bg-primary-400">
       <h1 className="text-4xl font-bold mb-4 text-white">{formattedDate}</h1>
       <form onSubmit={(e) => e.preventDefault()} className="w-full sm:max-w-md mx-auto rounded-xl overflow-y-scroll overflow-x-hidden p-4">
         <div className="border p-4 rounded-lg ">
         <div className="mb-4">
           <label className="block text-gray-700 font-bold mb-2" htmlFor="title">
-            Titel
+            Titel Essen
           </label>
           <input
             className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
@@ -94,14 +106,14 @@ const AddEvent: NextPage = () => {
           />
         </div>
         <div className="mb-4">
-          <label className="block text-gray-700 font-bold mb-2 " htmlFor="meal">
-            Essen hinzufügen
+          <label className="block text-gray-700 font-bold mb-2 " htmlFor="time">
+            Uhrzeit auswählen
           </label>
           <div className="flex w-full items-center justify-between">
-            {mealOptions.map((option, index) => (
+            {timeOptions.map((option, index) => (
               <button 
                 key={index} 
-                onClick={() => setMeal(option)}
+                onClick={() => setTime(option)}
                 className={`p-2 rounded ${meal === option ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
               >
                 {option}
@@ -114,13 +126,13 @@ const AddEvent: NextPage = () => {
         <div className="border p-4 rounded-lg ">
         <div className="mb-4">
           <label className="block text-gray-700 font-bold mb-2" htmlFor="title">
-            Titel
+            Titel Event
           </label>
           <input
             className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
             id="title"
             type="text"
-            placeholder="Titel"
+            placeholder="Titel Event"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             required
