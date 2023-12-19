@@ -68,14 +68,14 @@ export default function Home() {
         if(!dates.every(item => typeof item === 'string')) {
           return;
       }
-        let lastDateString = dates[dates.length - 1]
+        const lastDateString = dates[dates.length - 1]
         if (typeof lastDateString !== 'string') {
           return;
         }
         const lastDate = new Date(lastDateString);
         const newDates: string[] = [];
         for(let i = 1; i <= 14; i++) {
-          let date = new Date(lastDate);
+          const date = new Date(lastDate);
           date.setDate(date.getDate() + i);
           const dateString = date.toISOString().split('T')[0]
           // check if datestring is a type string
@@ -118,7 +118,7 @@ export default function Home() {
           <h2 className="text-4xl text-center py-4 sticky top-0 z-10">Kalender</h2>
           <ul className="px-4 py-2" >
             {dates.map((date, index) => (
-              <Day key={index} date={date} posts={groupedPosts[date] || []} />
+              <Day key={index} date={date} posts={groupedPosts[date] ?? []} />
             ))}
           </ul>
           <div ref={infiniteRef} >Loading...</div>
@@ -181,11 +181,11 @@ return posts.reduce((groupedPosts: GroupedPosts, post) => {
 }
 
 function generateNextTwoWeeks(): string[] {
-  let dates: string[] = [];
+  const dates: string[] = [];
   for(let i = 0; i <= 14; i++) {
-    let date = new Date();
+    const date = new Date();
     date.setDate(date.getDate() + i);
-    let dateString = date.toISOString().split('T')[0];
+    const dateString = date.toISOString().split('T')[0];
     // check if dateString is of type string
     if (typeof dateString == 'string') {
     dates.push(dateString);
