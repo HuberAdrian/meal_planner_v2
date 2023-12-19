@@ -62,30 +62,33 @@ const AddEvent: NextPage = () => {
     return <Error />;
   }
 
-  const timeOptions = [
-    "Frühstück",
-    "Mittagessen",
-    "Abendessen",
-  ];
-  /*
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    const safeEvent = {
-      type,
-      title,
-      description,
-      eventTime,
-    };
-    await api.mealEvents.create.mutate(mealEvent);
+  const timeOptions = {
+    "Frühstück": "09:00",
+    "Mittagessen": "13:00",
+    "Abendessen": "19:00",
   };
-    */
 
-  // create sample function to pint out the meal names to console
-    const printMealNames = () => {
-        console.log(data);
-        }
+  // write a simple handleSubmit function that prints the form values to the console
+  const handleSubmit = () => {
+    console.log(type, title, description, eventTime);
+
+    // convert the eventTime string to a Date object and print it to the console
+    const eventDate = new Date(eventTime);
+    console.log(eventDate);
     
-        return (
+  };
+
+
+  const handleTimeSelection = (option: keyof typeof timeOptions) => {
+    if (eventTime.includes(option)) {
+      setEventTime('');
+    } else {
+      setEventTime(`${date}T${timeOptions[option]}`);
+    }
+  };
+  
+      
+      return (
       <div className="flex flex-col items-center p-4 pt-14 min-h-screen bg-primary-400">
       <h1 className="text-4xl font-bold mb-4 text-white">{formattedDate}</h1>
       <form onSubmit={(e) => e.preventDefault()} className="w-full sm:max-w-md mx-auto rounded-xl overflow-y-scroll overflow-x-hidden p-4">
@@ -121,15 +124,15 @@ const AddEvent: NextPage = () => {
             Uhrzeit auswählen
           </label>
           <div className="flex w-full items-center justify-between">
-            {timeOptions.map((option, index) => (
-              <button 
-                key={index} 
-                onClick={() => setEventTime(option)}
-                className={`p-2 rounded ${eventTime === option ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
-              >
-                {option}
-              </button>
-            ))}
+          {Object.keys(timeOptions).map((option) => (
+            <button 
+              key={option} 
+              onClick={() => handleTimeSelection(option as keyof typeof timeOptions)}
+              className={`p-2 rounded ${eventTime.endsWith(timeOptions[option as keyof typeof timeOptions]) ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+  >
+              {option}
+            </button>
+          ))}
             </div>
           </div>
         </div>
@@ -180,7 +183,10 @@ const AddEvent: NextPage = () => {
         </div>
         <div className="flex items-center justify-center w-full mt-4">
         <button
-            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 w-full rounded-lg focus:outline-none focus:shadow-outline" type="submit">
+             className={`font-bold py-2 w-full rounded-lg focus:outline-none focus:shadow-outline ${!title || !description || !eventTime ? 'bg-gray-500 cursor-not-allowed' : 'bg-blue-500 hover:bg-blue-700 text-white'}`} 
+            onClick={handleSubmit}
+            disabled={!title || !description || !eventTime}
+            >
                 Speichern
         </button>
         </div>
@@ -192,3 +198,10 @@ const AddEvent: NextPage = () => {
 };
 
 export default AddEvent;
+
+/*
+Situation: duales Studium während des Bachelors -> Steuern gezahlt. Nach dem Bachelor ein halbes Jahr gearbeitet -> Steuern gezahlt. Danach plane ich ein Masterstudium, was davon kann ich absetzen?
+
+
+Können Steuern abgesetzt werden, wenn zwischen Bachelor und Master gearbeitet wurde?
+*/
