@@ -7,6 +7,7 @@ import { api } from "~/utils/api";
 import { useState } from "react";
 import { FiPlus, FiX } from "react-icons/fi";
 import { useRouter } from 'next/router';
+import  useInfiniteScroll  from 'react-infinite-scroll-hook';
 
 
 type Post = {
@@ -54,18 +55,56 @@ const LandingPage: React.FC = () => {
 
 export default function Home() {
   
-  const user = useUser();
-  if (!user.isSignedIn) return <LandingPage />;
+  const [dates, setDates] = useState(generateNextTwoWeeks());
 
   const { data, isLoading } = api.post.getAll.useQuery();
+
+
+
+
+  const loadMore = () => {
+
+        // check if dates is an array of dates, if not, return groupedPosts
+        if(!dates.every(item => typeof item === 'string')) {
+          return;
+      }
+        let lastDateString = dates[dates.length - 1]
+        if (typeof lastDateString !== 'string') {
+          return;
+        }
+        const lastDate = new Date(lastDateString);
+        const newDates: string[] = [];
+        for(let i = 1; i <= 14; i++) {
+          let date = new Date(lastDate);
+          date.setDate(date.getDate() + i);
+          const dateString = date.toISOString().split('T')[0]
+          // check if datestring is a type string
+          if (typeof dateString !== 'string') {
+            return;
+          }
+          newDates.push(dateString);
+        }
+        // check if newDates is an array of strings, if not, return
+        if (typeof newDates[0] !== 'string') {
+          return;
+        }
+
+        setDates(prevDates => [...prevDates, ...newDates]);
+  }
+
+  const [infiniteRef] = useInfiniteScroll({
+    loading: false,
+    hasNextPage: true,
+    onLoadMore: loadMore,
+  });
+
+  const user = useUser();
+  if (!user.isSignedIn) return <LandingPage />;
 
   if (isLoading) return <Loading />;
   if(!data) return <Error />;
 
   const groupedPosts = groupPostsByDate(data);
-
-  const nextTwoWeeks = generateNextTwoWeeks();
-
 
   return (
     <>
@@ -77,11 +116,12 @@ export default function Home() {
       <main className="flex flex-col sm:flex-row min-h-screen items-center bg-primary-400 p-4">
         <div className=" w-full sm:max-w-md mx-auto rounded-xl overflow-y-scroll overflow-x-hidden">
           <h2 className="text-4xl text-center py-4 sticky top-0 z-10">Kalender</h2>
-          <ul className="px-4 py-2">
-            {nextTwoWeeks.map((date, index) => (
+          <ul className="px-4 py-2" >
+            {dates.map((date, index) => (
               <Day key={index} date={date} posts={groupedPosts[date] || []} />
             ))}
           </ul>
+          <div ref={infiniteRef} >Loading...</div>
         </div>
         <BottomNavBar activePage="calendar" />  
       </main>
