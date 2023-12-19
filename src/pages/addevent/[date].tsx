@@ -6,6 +6,7 @@ import { Error, Loading } from "~/components/loading";
 import { api } from "~/utils/api";
 import { type NextPage } from "next";
 import { useRouter } from 'next/router';
+import { toast } from 'react-hot-toast';
 
 type Meal = {
   id: string;
@@ -57,6 +58,22 @@ const AddEvent: NextPage = () => {
   const formattedDate = new Date(date as string).toLocaleDateString('de-DE', { weekday: 'long', day: '2-digit', month: '2-digit' });
 
 
+  const { mutate, isLoading: isPosting } = api.post.create.useMutation({
+    onSuccess: () => {
+      toast.success("Posted!");
+      router.push("/");
+    },
+    onError: (e) => {
+      const errorMessage = e.data?.zodError?.fieldErrors.content;
+      if (errorMessage && errorMessage[0]) {
+        toast.error(errorMessage[0]);
+      } else {
+        toast.error("Failed to post! Please try again later.");
+      }
+    },
+  });
+
+
   if (isLoading) return <Loading />;
   if(!data) {
     return <Error />;
@@ -76,6 +93,7 @@ const AddEvent: NextPage = () => {
     const eventDate = new Date(eventTime);
     console.log(eventDate);
     
+    mutate({ eventType: type, topic: title, content: description, eventDate });
   };
 
 
@@ -86,6 +104,10 @@ const AddEvent: NextPage = () => {
       setEventTime(`${date}T${timeOptions[option]}`);
     }
   };
+
+
+
+  if (isLoading) return <Loading />;
   
       
       return (
