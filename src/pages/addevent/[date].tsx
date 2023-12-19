@@ -1,5 +1,5 @@
 "use client"
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from "next/link";
 import BottomNavBar from "~/components/BottomNavBar";
 import { Error, Loading } from "~/components/loading";
@@ -10,9 +10,7 @@ import { useRouter } from 'next/router';
 type Meal = {
   id: string;
   createdAt: Date;
-  authorId: string;
   name: string;
-  counter: number;
   ingredient1: string;
   ingredient2: string;
   ingredient3: string;
@@ -37,21 +35,23 @@ type Post = {
   createdAt: Date;
   eventDate: Date;
   eventType: string;
-  authorId: string;
   topic: string;
   content: string;
-  completed: boolean;
+  deleted: boolean;
 };
+
 
 const AddEvent: NextPage = () => {
   const router = useRouter();
   const { date } = router.query;
-  const [meal, setMeal] = useState<string>('');
-  const [time, setTime] = useState<string>('');
-  const [title, setTitle] = useState<string>('');
-  const [description, setDescription] = useState<string>('');
-  const [eventTime, setEventTime] = useState<string>('');
 
+  // create a state for the post creation form
+  const [type, setType] = useState<string>(''); //for eventType
+  const [title, setTitle] = useState<string>(''); //for topic
+  const [description, setDescription] = useState<string>('');  //for content
+  const [eventTime, setEventTime] = useState<string>('');  //for eventDate
+
+  // get meal
   const { data, isLoading } = api.meal.getAll.useQuery();
 
   const formattedDate = new Date(date as string).toLocaleDateString('de-DE', { weekday: 'long', day: '2-digit', month: '2-digit' });
@@ -70,9 +70,8 @@ const AddEvent: NextPage = () => {
   /*
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    const mealEvent = {
-      meal,
-      time,
+    const safeEvent = {
+      type,
       title,
       description,
       eventTime,
@@ -92,18 +91,30 @@ const AddEvent: NextPage = () => {
       <form onSubmit={(e) => e.preventDefault()} className="w-full sm:max-w-md mx-auto rounded-xl overflow-y-scroll overflow-x-hidden p-4">
         <div className="border p-4 rounded-lg ">
         <div className="mb-4">
-          <label className="block text-gray-700 font-bold mb-2" htmlFor="title">
-            Titel Essen
+          <label className="block text-gray-700 font-bold mb-2" htmlFor="meal">
+            Meal
           </label>
-          <input
+          <select
             className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-            id="title"
-            type="text"
-            placeholder="Titel"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            required
-          />
+            id="meal"
+            onChange={(e) => {
+              const selectedMeal = data.find(meal => meal.id === e.target.value);
+              if (selectedMeal) {
+                setType("meal");
+                setTitle(selectedMeal.name);
+              } else {
+                setType('');
+                setTitle('');
+              }
+            }}
+          >
+            <option value="">Select a meal</option>
+            {data.map((meal) => (
+              <option key={meal.id} value={meal.id}>
+                {meal.name}
+              </option>
+            ))}
+          </select>
         </div>
         <div className="mb-4">
           <label className="block text-gray-700 font-bold mb-2 " htmlFor="time">
@@ -113,8 +124,8 @@ const AddEvent: NextPage = () => {
             {timeOptions.map((option, index) => (
               <button 
                 key={index} 
-                onClick={() => setTime(option)}
-                className={`p-2 rounded ${meal === option ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+                onClick={() => setEventTime(option)}
+                className={`p-2 rounded ${eventTime === option ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
               >
                 {option}
               </button>
@@ -136,6 +147,7 @@ const AddEvent: NextPage = () => {
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             required
+            readOnly={type === "meal"}
           />
         </div>
         <div className="mb-4">
@@ -174,7 +186,7 @@ const AddEvent: NextPage = () => {
         </div>
       </form>
       <div className="h-16" />
-        <BottomNavBar activePage='calendar' />
+      <BottomNavBar activePage='calendar' />
     </div>
   );
 };
