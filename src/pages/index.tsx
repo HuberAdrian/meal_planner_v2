@@ -59,9 +59,6 @@ export default function Home() {
 
   const { data, isLoading } = api.post.getAll.useQuery();
 
-
-
-
   const loadMore = () => {
 
         // check if dates is an array of dates, if not, return groupedPosts
@@ -123,6 +120,7 @@ export default function Home() {
           </ul>
           <div ref={infiniteRef} >Loading...</div>
         </div>
+        <div className="h-16" />
         <BottomNavBar activePage="calendar" />  
       </main>
     </>

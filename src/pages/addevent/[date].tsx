@@ -173,6 +173,7 @@ const AddEvent: NextPage = () => {
         </button>
         </div>
       </form>
+      <div className="h-16" />
         <BottomNavBar activePage='calendar' />
     </div>
   );
