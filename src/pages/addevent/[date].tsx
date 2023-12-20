@@ -29,11 +29,11 @@ const AddEvent: NextPage = () => {
   const { mutate, isLoading: isPosting } = api.post.create.useMutation({
     onSuccess: () => {
       toast.success("Posted!");
-      router.push("/");
+      void router.push("/");
     },
     onError: (e) => {
       const errorMessage = e.data?.zodError?.fieldErrors.content;
-      if (errorMessage && errorMessage[0]) {
+      if (errorMessage?.[0]) {
         toast.error(errorMessage[0]);
       } else {
         toast.error("Failed to post! Please try again later.");
@@ -66,10 +66,12 @@ const AddEvent: NextPage = () => {
 
 
   const handleTimeSelection = (option: keyof typeof timeOptions) => {
-    if (eventTime.includes(option)) {
-      setEventTime('');
-    } else {
-      setEventTime(`${date}T${timeOptions[option]}`);
+    if (typeof date === 'string') {
+        if (eventTime.includes(option)) {
+            setEventTime('');
+        } else {
+            setEventTime(`${date}T${timeOptions[option]}`)
+        }
     }
   };
 

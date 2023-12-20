@@ -146,7 +146,7 @@ const Day: React.FC<DayProps> = ({ date, posts }) => {
     },
     onError: (e) => {
       const errorMessage = e.data?.zodError?.fieldErrors.content;
-      if (errorMessage && errorMessage[0]) {
+      if (errorMessage?.[0]) {
         toast.error(errorMessage[0]);
       } else {
         toast.error("Failed to post! Please try again later.");
@@ -219,3 +219,4 @@ function generateNextTwoWeeks(): string[] {
   }
   return dates;
 }
+
