@@ -8,6 +8,7 @@ import { useState } from "react";
 import { FiPlus, FiX } from "react-icons/fi";
 import { useRouter } from 'next/router';
 import  useInfiniteScroll  from 'react-infinite-scroll-hook';
+import toast from "react-hot-toast";
 
 
 type Post = {
@@ -95,6 +96,8 @@ export default function Home() {
     onLoadMore: loadMore,
   });
 
+
+
   const user = useUser();
   if (!user.isSignedIn) return <LandingPage />;
 
@@ -135,6 +138,29 @@ const Day: React.FC<DayProps> = ({ date, posts }) => {
   const formattedDate = new Date(date).toLocaleDateString('de-DE', { weekday: 'long', day: '2-digit', month: '2-digit' });
   const [weekday, dayMonth] = formattedDate.split(', ');
 
+  const { mutate, isLoading: isPosting } = api.post.delete.useMutation({
+    onSuccess: () => {
+      toast.success("Gelöscht");
+      router.reload();
+      
+    },
+    onError: (e) => {
+      const errorMessage = e.data?.zodError?.fieldErrors.content;
+      if (errorMessage && errorMessage[0]) {
+        toast.error(errorMessage[0]);
+      } else {
+        toast.error("Failed to post! Please try again later.");
+      }
+    },
+  });
+
+  const handleDelete = (id: string) => () => {
+    mutate({ id });
+  };
+
+
+
+
   return (
     <div className="flex flex-col items-center px-4">
       <h2 className="text-2xl font-bold self-start">{`${weekday}, ${dayMonth}`}</h2>
@@ -146,7 +172,9 @@ const Day: React.FC<DayProps> = ({ date, posts }) => {
             <h2 className="text-xl font-bold">{post.topic}</h2>
             <p className="text-sm text-gray-500">{post.content}</p>
           </div>
-          <button className="pl-4 pr-0 py-2 text-white rounded self-start sm:self-auto flex-shrink-0">
+          <button className="pl-4 pr-0 py-2 text-white rounded self-start sm:self-auto flex-shrink-0"
+            onClick={handleDelete(post.id)}
+          >
             <FiX className="text-2xl"/>
           </button>
         </div>

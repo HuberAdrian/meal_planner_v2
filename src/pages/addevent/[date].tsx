@@ -8,38 +8,6 @@ import { type NextPage } from "next";
 import { useRouter } from 'next/router';
 import { toast } from 'react-hot-toast';
 
-type Meal = {
-  id: string;
-  createdAt: Date;
-  name: string;
-  ingredient1: string;
-  ingredient2: string;
-  ingredient3: string;
-  ingredient4: string;
-  ingredient5: string;
-  ingredient6: string;
-  ingredient7: string;
-  ingredient8: string;
-  ingredient9: string;
-  ingredient10: string;
-  ingredient11: string;
-  ingredient12: string;
-  ingredient13: string;
-  ingredient14: string;
-  ingredient15: string;
-  completed: boolean;
-};
-
-// write a type definizion for the Post model
-type Post = {
-  id: string;
-  createdAt: Date;
-  eventDate: Date;
-  eventType: string;
-  topic: string;
-  content: string;
-  deleted: boolean;
-};
 
 
 const AddEvent: NextPage = () => {
@@ -92,7 +60,7 @@ const AddEvent: NextPage = () => {
     // convert the eventTime string to a Date object and print it to the console
     const eventDate = new Date(eventTime);
     console.log(eventDate);
-    
+
     mutate({ eventType: type, topic: title, content: description, eventDate });
   };
 
