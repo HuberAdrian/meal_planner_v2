@@ -163,7 +163,10 @@ const Day: React.FC<DayProps> = ({ date, posts }) => {
 
   return (
     <div className="flex flex-col items-center px-4">
-      <h2 className="text-2xl font-bold self-start">{`${weekday}, ${dayMonth}`}</h2>
+      <div className="flex items-center justify-between w-full">
+      <h2 className="text-2xl font-bold self-start">{`${weekday}`}</h2>
+      <h2 className="text-2xl font-bold self-start">{`${dayMonth}`}</h2>
+      </div>
       {posts.map((post, index) => (
         <div key={index} className="flex items-start rounded-lg justify-between w-full my-1 border p-3">
           <div className="text-lg text-primary-100 font-bold self-center transform -rotate-90 flex-shrink-0 mr-2">{post.eventType}</div>
