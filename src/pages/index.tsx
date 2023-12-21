@@ -134,7 +134,7 @@ export default function Home() {
       <main className="flex flex-col sm:flex-row min-h-screen items-center bg-primary-400 p-4">
         <div className=" w-full sm:max-w-md mx-auto rounded-xl overflow-y-scroll overflow-x-hidden">
           <h2 className="text-4xl text-center py-4 sticky top-0 z-10">Kalender</h2>
-          <ul className="px-4 py-2" >
+          <ul className="px-2 py-2" >
             {dates.map((date, index) => (
               <Day key={index} date={date} posts={groupedPosts[date] ?? []} />
             ))}
