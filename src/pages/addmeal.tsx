@@ -5,6 +5,7 @@ import { type NextPage } from "next";
 import { toast } from 'react-hot-toast';
 import { api } from "~/utils/api";
 import { useRouter } from 'next/router';
+import ToggleSwitch from '~/components/ToggleSwitch';
 
 
 const AddMeal: NextPage = () =>  {
@@ -41,10 +42,23 @@ const AddMeal: NextPage = () =>  {
     setPlusButtonDisabled(true);
   };
 
+
+  const handleToggle = (state: boolean) => {
+    // Here you can handle the state change
+    // For example, you can redirect to the "Delete Meal" page
+    if (state) {
+      router.push("/deletemeal");
+    } else {
+      router.push("/addmeal");
+    }
+  };
+
+
   return (
     <div className="flex flex-col items-center p-4 pt-14 min-h-screen bg-primary-400">
       <h1 className="text-4xl font-bold mb-4 text-white">Essen hinzufügen</h1>
-      
+      <ToggleSwitch onToggle={handleToggle} />
+
       <form onSubmit={onSubmit} className="w-full sm:max-w-md mx-auto rounded-xl overflow-y-scroll overflow-x-hidden p-4">
         <div className="border p-4 rounded-lg mb-8">
           <div className="mb-4">
@@ -84,7 +98,7 @@ const AddMeal: NextPage = () =>  {
         </div>
       </form>
       <div className="h-16" />
-      <BottomNavBar activePage="addmeal" />
+      <BottomNavBar activePage="addMeal" />
     </div>
   );
 }
