@@ -11,6 +11,7 @@ import  useInfiniteScroll  from 'react-infinite-scroll-hook';
 import toast from "react-hot-toast";
 
 
+
 type Post = {
   id: string;
   createdAt: Date;
@@ -27,6 +28,9 @@ type DayProps = {
   date: string;
   posts: Post[];
 };
+
+
+
 
 // landing page if user is not signed in
 const LandingPage: React.FC = () => {
@@ -54,12 +58,20 @@ const LandingPage: React.FC = () => {
 
 
 
+
+
+
+
+
 export default function Home() {
   
   const [dates, setDates] = useState(generateNextTwoWeeks());
 
   const { data, isLoading } = api.post.getAll.useQuery();
 
+  const user = useUser();
+
+  // ------------------ INFINITE SCROLL ------------------
   const loadMore = () => {
 
         // check if dates is an array of dates, if not, return groupedPosts
@@ -97,14 +109,20 @@ export default function Home() {
   });
 
 
+  // ------------------ ERROR / NOT SIGNED IN ------------------
 
-  const user = useUser();
   if (!user.isSignedIn) return <LandingPage />;
 
   if (isLoading) return <Loading />;
   if(!data) return <Error />;
 
+
+
+
   const groupedPosts = groupPostsByDate(data);
+
+
+
 
   return (
     <>
@@ -134,10 +152,13 @@ export default function Home() {
 
 const Day: React.FC<DayProps> = ({ date, posts }) => {
   const router = useRouter();
+
   // get the date 
   const formattedDate = new Date(date).toLocaleDateString('de-DE', { weekday: 'long', day: '2-digit', month: '2-digit' });
   const [weekday, dayMonth] = formattedDate.split(', ');
 
+
+  // ------------------ DELETE POST ------------------
   const { mutate, isLoading: isPosting } = api.post.delete.useMutation({
     onSuccess: () => {
       toast.success("Gelöscht!");
@@ -169,13 +190,13 @@ const Day: React.FC<DayProps> = ({ date, posts }) => {
       </div>
       {posts.map((post, index) => (
         <div key={index} className="flex items-start rounded-lg justify-between w-full my-1 border p-3">
-          <div className="text-lg text-primary-100 font-bold self-center transform -rotate-90 flex-shrink-0 mr-2">{post.eventType}</div>
-          <img src={post.eventType === "meal"? "/meal_default.png" : "/event_default.png"} alt="Post" className="w-12 h-12 bg-white flex-shrink-0 mr-5" />
-          <div className="flex flex-col flex-grow">
+          <div className="text-lg text-primary-100 font-bold self-center transform -rotate-90 flex-shrink-0 mr-2 -ml-3 ">{post.eventType}</div>
+          <img src={post.eventType === "meal"? "/meal_default.png" : "/event_default.png"} alt="Post" className="w-12 h-12 bg-white flex-shrink-0 mr-3 -ml-2 " />
+          <div className="flex flex-col flex-grow overflow-x-scroll">
             <h2 className="text-xl font-bold">{post.topic}</h2>
             <p className="text-sm text-gray-500">{post.content}</p>
           </div>
-          <button className="pl-4 pr-0 py-2 text-white rounded self-start sm:self-auto flex-shrink-0"
+          <button className="pl-2 pr-0 py-2 text-white rounded self-start sm:self-auto flex-shrink-0"
             onClick={handleDelete(post.id)}
           >
             <FiX className="text-2xl"/>
@@ -209,6 +230,8 @@ return posts.reduce((groupedPosts: GroupedPosts, post) => {
 }, {} as GroupedPosts);
 }
 
+
+// This function generates the next two weeks, starting from the passed date
 function generateNextTwoWeeks(): string[] {
   const dates: string[] = [];
   for(let i = 0; i <= 14; i++) {

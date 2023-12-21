@@ -62,7 +62,7 @@ const AddMeal: NextPage = () =>  {
       <form onSubmit={onSubmit} className="w-full sm:max-w-md mx-auto rounded-xl overflow-y-scroll overflow-x-hidden p-4">
         <div className="border p-4 rounded-lg mb-8">
           <div className="mb-4">
-            <label htmlFor="meal" className="block text-gray-700 font-bold mb-2">Meal:</label>
+            <label htmlFor="meal" className="block text-gray-700 font-bold mb-2">Name:</label>
             <input id="meal" value={meal} onChange={(e) => setMeal(e.target.value)} className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"/>
           </div>
         </div>
@@ -70,7 +70,7 @@ const AddMeal: NextPage = () =>  {
         <div className="border p-4 rounded-lg">
           {ingredients.map((_, index) => (
             <div key={index} className="mb-4">
-              <label htmlFor={`ingredient${index}`} className="block text-gray-700 font-bold mb-2">Ingredients for 1 serving:</label>
+              <label htmlFor={`ingredient${index}`} className="block text-gray-700 font-bold mb-2">Zutaten für eine Portion:</label>
               <input id={`ingredient${index}`} value={ingredients[index]} 
                      onChange={(e) => {
                        const newIngredients = [...ingredients];

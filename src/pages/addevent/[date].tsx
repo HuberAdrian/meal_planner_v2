@@ -7,7 +7,6 @@ import { api } from "~/utils/api";
 import { type NextPage } from "next";
 import { useRouter } from 'next/router';
 import { toast } from 'react-hot-toast';
-import { MdOutlineElectricalServices } from 'react-icons/md';
 
 
 
@@ -37,7 +36,7 @@ const AddEvent: NextPage = () => {
       if (errorMessage?.[0]) {
         toast.error(errorMessage[0]);
       } else {
-        toast.error("Failed to post! Please try again later.");
+        toast.error("Fehler beim Posten");
       }
     },
   });
@@ -194,10 +193,3 @@ const AddEvent: NextPage = () => {
 };
 
 export default AddEvent;
-
-/*
-Situation: duales Studium während des Bachelors -> Steuern gezahlt. Nach dem Bachelor ein halbes Jahr gearbeitet -> Steuern gezahlt. Danach plane ich ein Masterstudium, was davon kann ich absetzen?
-
-
-Können Steuern abgesetzt werden, wenn zwischen Bachelor und Master gearbeitet wurde?
-*/
