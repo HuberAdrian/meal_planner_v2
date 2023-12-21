@@ -35,6 +35,27 @@ const DeleteMeal: NextPage = () =>  {
 
   const { data, isLoading } = api.meal.getAll.useQuery();
 
+  const { mutate, isLoading: isPosting } = api.meal.delete.useMutation({
+    onSuccess: () => {
+      router.reload();
+      
+    },
+    onError: (e) => {
+      const errorMessage = e.data?.zodError?.fieldErrors.content;
+      if (errorMessage?.[0]) {
+        toast.error(errorMessage[0]);
+      } else {
+        toast.error("Fehler");
+      }
+    },
+  });
+
+  const handleDelete = (id: string) => () => {
+    mutate({ id });
+    toast.success("Meal deleted!");
+  };
+
+
   useEffect(() => {
     if (data) {
       setMeals(data);
@@ -50,10 +71,6 @@ const DeleteMeal: NextPage = () =>  {
         }
   };
 
-  const handleDelete = (mealId: string) => {
-    // Call your delete API here
-    toast.success("Meal deleted!");
-  };
 
   if (isLoading) return <div>Loading...</div>;
 

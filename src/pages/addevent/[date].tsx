@@ -54,7 +54,7 @@ const AddEvent: NextPage = () => {
     "Abendessen": "19:00",
   };
 
-  // write a simple handleSubmit function that prints the form values to the console
+  // add event
   const handleSubmit = () => {
     console.log(type, title, description, eventTime);
     let eventT = type
