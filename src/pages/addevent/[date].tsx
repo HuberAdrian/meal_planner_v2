@@ -7,6 +7,7 @@ import { api } from "~/utils/api";
 import { type NextPage } from "next";
 import { useRouter } from 'next/router';
 import { toast } from 'react-hot-toast';
+import { MdOutlineElectricalServices } from 'react-icons/md';
 
 
 
@@ -56,12 +57,16 @@ const AddEvent: NextPage = () => {
   // write a simple handleSubmit function that prints the form values to the console
   const handleSubmit = () => {
     console.log(type, title, description, eventTime);
+    let eventT = type
+    if (!type) {
+      eventT = "event"
+    }
 
     // convert the eventTime string to a Date object and print it to the console
     const eventDate = new Date(eventTime);
     console.log(eventDate);
 
-    mutate({ eventType: type, topic: title, content: description, eventDate });
+    mutate({ eventType: eventT, topic: title, content: description, eventDate });
   };
 
 
