@@ -81,7 +81,6 @@ const AddEvent: NextPage = () => {
   };
 
 
-
   if (isLoading) return <Loading />;
   
       
