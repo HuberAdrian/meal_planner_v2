@@ -21,7 +21,7 @@ export const mealRouter = createTRPCRouter({
 .mutation(async ({ ctx, input }) => {
 
   // Create an object to hold the ingredients
-  let ingredientsObject: Record<string, string> = {};
+  const ingredientsObject: Record<string, string> = {};
   input.ingredients.forEach((ingredient, index) => {
     if (index < 15) { // as we have only 15 ingredient fields in the database model
       ingredientsObject[`ingredient${index + 1}`] = ingredient;
@@ -32,7 +32,7 @@ export const mealRouter = createTRPCRouter({
     data: {
       name: input.name,
       ...ingredientsObject,
-      completed: input.completed || false,
+      completed: input.completed ?? false,
     },
   });
 

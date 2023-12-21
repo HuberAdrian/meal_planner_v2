@@ -43,7 +43,7 @@ const DeleteMeal: NextPage = () =>  {
 
   const handleToggle = (state: boolean) => {
     if (!state) {
-      router.push("/addMeal");
+      void router.push("/addMeal");
     }
   };
 

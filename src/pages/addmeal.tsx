@@ -11,7 +11,7 @@ import ToggleSwitch from '~/components/ToggleSwitch';
 const AddMeal: NextPage = () =>  {
   const router = useRouter();
   const [meal, setMeal] = useState('');
-  const [ingredients, setIngredients] = useState(Array(6).fill(''));
+  const [ingredients, setIngredients] = useState<string[]>(Array(6).fill(''));
   const [isPlusButtonDisabled, setPlusButtonDisabled] = useState(false);
 
   const { mutate, isLoading: isPosting } = api.meal.create.useMutation({
@@ -38,7 +38,7 @@ const AddMeal: NextPage = () =>  {
 
   
   const handleAddMore = () => {
-    setIngredients(prevIngredients => [...prevIngredients, ...Array(9).fill('')]);
+    setIngredients((prevIngredients: string[]) => [...prevIngredients, ...(Array(9).fill('') as string[])]);
     setPlusButtonDisabled(true);
   };
 
@@ -47,9 +47,9 @@ const AddMeal: NextPage = () =>  {
     // Here you can handle the state change
     // For example, you can redirect to the "Delete Meal" page
     if (state) {
-      router.push("/deletemeal");
+      void router.push("/deletemeal");
     } else {
-      router.push("/addmeal");
+      void router.push("/addmeal");
     }
   };
 

@@ -49,33 +49,3 @@ export const postRouter = createTRPCRouter({
     }),
 
 });
-
-
-/*
-datasource db {
-  provider = "mysql"
-  url      = env("DATABASE_URL")
-  relationMode = "prisma"
-}
-
-
-generator client {
-  provider = "prisma-client-js"
-}
-
-
-model Post {
-  id        String   @id @default(cuid()) // generate a unique string identifier
-  createdAt DateTime @default(now()) 
-
-  eventDate DateTime 
-  eventType String //meal or event
-  topic      String @db.VarChar(255)
-  content   String @db.VarChar(255) // String length in sql is weird, so we set that to a specific character length
-  deleted Boolean @default(false)
-
-
-
-  @@index([createdAt]) //will be indexed by createdAt
-}
-  */
