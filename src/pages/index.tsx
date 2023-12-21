@@ -121,7 +121,7 @@ export default function Home() {
               <Day key={index} date={date} posts={groupedPosts[date] ?? []} />
             ))}
           </ul>
-          <div ref={infiniteRef} >Loading...</div>
+          <div ref={infiniteRef} >Laden...</div>
         </div>
         <div className="h-16" />
         <BottomNavBar activePage="calendar" />  
@@ -140,7 +140,7 @@ const Day: React.FC<DayProps> = ({ date, posts }) => {
 
   const { mutate, isLoading: isPosting } = api.post.delete.useMutation({
     onSuccess: () => {
-      toast.success("Gelöscht");
+      toast.success("Gelöscht!");
       router.reload();
       
     },
@@ -149,7 +149,7 @@ const Day: React.FC<DayProps> = ({ date, posts }) => {
       if (errorMessage?.[0]) {
         toast.error(errorMessage[0]);
       } else {
-        toast.error("Failed to post! Please try again later.");
+        toast.error("Fehler beim Löschen");
       }
     },
   });

@@ -52,7 +52,7 @@ const DeleteMeal: NextPage = () =>  {
 
   const handleDelete = (id: string) => () => {
     mutate({ id });
-    toast.success("Meal deleted!");
+    toast.success("Essen gelöscht!");
   };
 
 
@@ -76,8 +76,9 @@ const DeleteMeal: NextPage = () =>  {
 
   return (
     <div className="flex flex-col items-center p-4 pt-14 min-h-screen bg-primary-400">
-      <h1 className="text-4xl font-bold mb-4 text-white">Delete Meal</h1>
-      <ToggleSwitch onToggle={handleToggle} />
+      <h1 className="text-4xl font-bold mb-4 text-white">Essen Löschen</h1>
+      <ToggleSwitch onToggle={handleToggle} initialState={true} />
+
       
       {meals.map((meal, index) => (
         <div key={index} className="border p-4 rounded-lg mb-4 w-full sm:max-w-md mx-auto">
@@ -86,7 +87,7 @@ const DeleteMeal: NextPage = () =>  {
             ingredient && <p key={index} className="text-gray-700">{ingredient}</p>
           ))}
           <button onClick={() => handleDelete(meal.id)} className="mt-4 p-2 bg-red-500 text-white rounded-lg justify-center w-full self-center ">
-            Delete
+            Löschen
           </button>
         </div>
       ))}

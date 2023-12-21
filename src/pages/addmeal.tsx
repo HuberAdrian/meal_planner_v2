@@ -57,7 +57,7 @@ const AddMeal: NextPage = () =>  {
   return (
     <div className="flex flex-col items-center p-4 pt-14 min-h-screen bg-primary-400">
       <h1 className="text-4xl font-bold mb-4 text-white">Essen hinzufügen</h1>
-      <ToggleSwitch onToggle={handleToggle} />
+      <ToggleSwitch onToggle={handleToggle} initialState={false} />
 
       <form onSubmit={onSubmit} className="w-full sm:max-w-md mx-auto rounded-xl overflow-y-scroll overflow-x-hidden p-4">
         <div className="border p-4 rounded-lg mb-8">

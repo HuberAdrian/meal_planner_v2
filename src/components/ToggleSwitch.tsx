@@ -1,8 +1,13 @@
-"use client"
+"useclient"
 import { useState } from 'react';
 
-const ToggleSwitch = ({ onToggle }: { onToggle: (state: boolean) => void }) => {
-  const [isToggled, setIsToggled] = useState(false);
+interface ToggleSwitchProps {
+  onToggle: (state: boolean) => void;
+  initialState: boolean;
+}
+
+const ToggleSwitch = ({ onToggle, initialState }: ToggleSwitchProps) => {
+  const [isToggled, setIsToggled] = useState(initialState);
 
   const handleToggle = () => {
     setIsToggled(!isToggled);
@@ -15,10 +20,10 @@ const ToggleSwitch = ({ onToggle }: { onToggle: (state: boolean) => void }) => {
         <div className="relative">
           <input id="toogleA" type="checkbox" className="hidden" checked={isToggled} onChange={handleToggle} />
           <div className="toggle__line w-10 h-4 bg-gray-400 rounded-full shadow-inner"></div>
-          <div className={`toggle__dot absolute w-6 h-6 bg-white rounded-full shadow inset-y-0 left-0 ${isToggled ? 'left-full' : ''} transform -translate-x-full`}></div>
+          <div className={`toggle__dot absolute w-6 h-6 bg-white rounded-full shadow inset-y-0 left-0 ${isToggled ? 'translate-x-4' : 'translate-x-0'}`}></div>
         </div>
         <div className="ml-3 text-gray-700 font-medium">
-          {isToggled ? 'Delete Meals' : 'Add Meal'}
+          {isToggled ? 'hinzufügen' : 'löschen'}
         </div>
       </label>
     </div>
@@ -26,3 +31,4 @@ const ToggleSwitch = ({ onToggle }: { onToggle: (state: boolean) => void }) => {
 };
 
 export default ToggleSwitch;
+
