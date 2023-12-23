@@ -76,7 +76,7 @@ const DeleteMeal: NextPage = () =>  {
 
   return (
     <div className="flex flex-col items-center p-4 pt-14 min-h-screen bg-primary-400">
-      <h1 className="text-4xl font-bold mb-4 text-white">Essen Löschen</h1>
+      <h1 className="text-3xl font-bold mb-4 text-white">Essen Löschen</h1>
       <ToggleSwitch onToggle={handleToggle} initialState={true} />
 
       

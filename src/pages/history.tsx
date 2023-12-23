@@ -118,7 +118,7 @@ const History: NextPage = () => {
   return (
     <div>
       <div className="flex flex-col items-center p-4 pt-14 min-h-screen bg-primary-400">
-        <h1 className="text-2xl font-bold mb-4">History</h1>
+        <h1 className="text-3xl font-bold mb-4 text-white">History</h1>
         <div className="flex justify-between items-center w-full max-w-md mb-4 border p-4 rounded-lg">
           <button onClick={handlePreviousMonth}>
             <FaArrowLeft />

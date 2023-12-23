@@ -85,7 +85,7 @@ const AddEvent: NextPage = () => {
       
       return (
       <div className="flex flex-col items-center p-4 pt-14 min-h-screen bg-primary-400">
-      <h1 className="text-4xl font-bold mb-4 text-white">{formattedDate}</h1>
+      <h1 className="text-3xl font-bold mb-4 text-white">{formattedDate}</h1>
       <form onSubmit={(e) => e.preventDefault()} className="w-full sm:max-w-md mx-auto rounded-xl overflow-y-scroll overflow-x-hidden p-4">
         <div className="border p-4 rounded-lg ">
         <div className="mb-4">
