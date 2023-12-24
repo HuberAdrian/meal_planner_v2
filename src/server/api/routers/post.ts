@@ -82,12 +82,12 @@ export const postRouter = createTRPCRouter({
               AND: [
                 {
                   eventDate: {
-                    gte: new Date(year, month, 1), // start of the month
+                    gte: new Date(year, month - 1, 1), // start of the month
                   },
                 },
                 {
                   eventDate: {
-                    lt: new Date(month === 12 ? year + 1 : year, month % 12, 1), // start of the next month
+                    lt: new Date(month === 12 ? year + 1 : year, month === 12 ? 0 : month, 1), // start of the next month
                   },
                 },
                 {

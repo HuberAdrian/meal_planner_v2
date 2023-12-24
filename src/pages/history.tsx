@@ -20,7 +20,8 @@ const initialMeals: Meal[] = [
 ];
 
 const HistoryMonth: React.FC<{date: Date}> = ({ date }) => {
-  const { data, error } = api.post.getOneMonth.useQuery({ date });
+  const oneMonthLess = new Date(date.getFullYear(), date.getMonth() + 1);
+  const { data, error } = api.post.getOneMonth.useQuery({ date: oneMonthLess });
 
   if (error) {
     console.error(error);
