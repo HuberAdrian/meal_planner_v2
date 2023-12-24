@@ -1,5 +1,5 @@
 "use client";
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { NextPage } from "next";
 import { FaArrowLeft, FaArrowRight } from 'react-icons/fa';
 import BottomNavBar from '~/components/BottomNavBar';
@@ -19,16 +19,15 @@ const initialMeals: Meal[] = [
   // Add more meals as needed
 ];
 
-const HistoryMonth: React.FC<{month: number}> = ({ month }) => {
-  const date = new Date(2023, month);
-  const { data, isLoading, error } = api.post.getOneMonth.useQuery({ date });
+const HistoryMonth: React.FC<{date: Date}> = ({ date }) => {
+  const { data, error } = api.post.getOneMonth.useQuery({ date });
 
   if (error) {
     console.error(error);
     return <div>Error...</div>;
   }
 
-  if (isLoading) {
+  if (!data) {
     return <Loading />;
   }
 
@@ -50,14 +49,14 @@ const HistoryMonth: React.FC<{month: number}> = ({ month }) => {
 }
 
 const History: NextPage = () => {
-  const [month, setMonth] = useState<number>(new Date().getMonth());
+  const [date, setDate] = useState<Date>(new Date());
 
   const handlePreviousMonth = () => {
-    setMonth(month - 1);
+    setDate(new Date(date.getFullYear(), date.getMonth() - 1));
   };
 
   const handleNextMonth = () => {
-    setMonth(month + 1);
+    setDate(new Date(date.getFullYear(), date.getMonth() + 1));
   };
 
   return (
@@ -68,12 +67,12 @@ const History: NextPage = () => {
           <button onClick={handlePreviousMonth}>
             <FaArrowLeft />
           </button>
-          <h2>{new Date(2023, month).toLocaleString('default', { month: 'long' })}</h2>
+          <h2>{`${date.toLocaleString('default', { month: 'long' })} ${date.getFullYear()}`}</h2>
           <button onClick={handleNextMonth}>
             <FaArrowRight />
           </button>
         </div>
-        <HistoryMonth month={month} />
+        <HistoryMonth date={date} />
       </div>
       <BottomNavBar activePage='history' />
     </div>
