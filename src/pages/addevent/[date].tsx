@@ -48,8 +48,8 @@ const AddEvent: NextPage = () => {
 
   const timeOptions = {
     "Frühstück": "09:00",
-    "Mittagessen": "13:00",
-    "Abendessen": "19:00",
+    "Mittags": "13:00",
+    "Abends": "19:00",
   };
 
   // add event
