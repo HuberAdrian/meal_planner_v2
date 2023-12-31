@@ -62,9 +62,20 @@ const AddEvent: NextPage = () => {
 
     // convert the eventTime string to a Date object and print it to the console
     const eventDate = new Date(eventTime);
-    console.log(eventDate);
 
-    mutate({ eventType: eventT, topic: title, content: description, eventDate });
+    const mutationData = {
+      eventType: eventT,
+      topic: title,
+      content: "-",
+      eventDate
+    };
+  
+    // Conditionally add the description field to the mutationData object
+    if (description) {
+      mutationData.content = description;
+    }
+  
+    mutate(mutationData);
   };
 
 
@@ -157,7 +168,6 @@ const AddEvent: NextPage = () => {
             placeholder="Beschreibung"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            required
           />
         </div>
         <div className="mb-4">
@@ -177,9 +187,9 @@ const AddEvent: NextPage = () => {
         </div>
         <div className="flex items-center justify-center w-full mt-4">
         <button
-             className={`font-bold py-2 w-full rounded-lg focus:outline-none focus:shadow-outline ${!title || !description || !eventTime ? 'bg-gray-500 cursor-not-allowed' : 'bg-blue-500 hover:bg-blue-700 text-white'}`} 
+             className={`font-bold py-2 w-full rounded-lg focus:outline-none focus:shadow-outline ${!title || !eventTime ? 'bg-gray-500 cursor-not-allowed' : 'bg-blue-500 hover:bg-blue-700 text-white'}`} 
             onClick={handleSubmit}
-            disabled={!title || !description || !eventTime}
+            disabled={!title || !eventTime}
             >
                 Speichern
         </button>
