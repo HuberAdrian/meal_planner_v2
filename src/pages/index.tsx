@@ -11,7 +11,6 @@ import  useInfiniteScroll  from 'react-infinite-scroll-hook';
 import toast from "react-hot-toast";
 
 
-
 type Post = {
   id: string;
   createdAt: Date;
@@ -27,6 +26,14 @@ type GroupedPosts = Record<string, Post[]>;
 type DayProps = {
   date: string;
   posts: Post[];
+};
+
+type TimeOptionsKeys = "Morgens" | "Mittags" | "Abends";
+
+const timeOptions: Record<TimeOptionsKeys, string> = {
+  "Morgens": "09:00",
+  "Mittags": "13:00",
+  "Abends": "19:00",
 };
 
 
@@ -188,9 +195,15 @@ const Day: React.FC<DayProps> = ({ date, posts }) => {
       <h2 className="text-2xl font-bold self-start">{`${weekday}`}</h2>
       <h2 className="text-2xl font-bold self-start">{`${dayMonth}`}</h2>
       </div>
-      {posts.map((post, index) => (
+      {posts.map((post, index) => {
+        let formattedTime = post.eventDate.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+
+        if (post.eventType === "meal") {
+          formattedTime = (Object.keys(timeOptions) as TimeOptionsKeys[]).find(key => timeOptions[key] === formattedTime) || formattedTime;
+        }
+        return(
         <div key={index} className="flex items-start rounded-lg justify-between w-full my-1 border p-3">
-          <div className="text-lg text-primary-100 font-bold self-center transform -rotate-90 flex-shrink-0 mr-2 -ml-3 ">{post.eventType}</div>
+          <div className="text-lg text-primary-100 font-bold self-center transform -rotate-90 flex-shrink-0 mr-2 -ml-3 ">{formattedTime}</div>
           <img src={post.eventType === "meal"? "/meal_default.png" : "/event_default.png"} alt="Post" className="w-12 h-12 bg-white flex-shrink-0 mr-3 -ml-2 " />
           <div className="flex flex-col flex-grow overflow-x-scroll">
             <h2 className="text-xl font-bold">{post.topic}</h2>
@@ -202,7 +215,7 @@ const Day: React.FC<DayProps> = ({ date, posts }) => {
             <FiX className="text-2xl"/>
           </button>
         </div>
-      ))}
+      )})}
       <button 
         className="w-10 h-10 border text-white flex rounded-full items-center justify-center mt-4"
         onClick={() => { void( async () => {await router.push(`/addevent/${date}`)})();}}
