@@ -199,7 +199,7 @@ const Day: React.FC<DayProps> = ({ date, posts }) => {
         let formattedTime = post.eventDate.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
 
         if (post.eventType === "meal") {
-          formattedTime = (Object.keys(timeOptions) as TimeOptionsKeys[]).find(key => timeOptions[key] === formattedTime) || formattedTime;
+          formattedTime = (Object.keys(timeOptions) as TimeOptionsKeys[]).find(key => timeOptions[key] === formattedTime) ?? formattedTime;
         }
         return(
         <div key={index} className="flex items-start rounded-lg justify-between w-full my-1 border p-3">

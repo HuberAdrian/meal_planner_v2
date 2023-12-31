@@ -12,12 +12,13 @@ import { toast } from 'react-hot-toast';
 const AddEvent: NextPage = () => {
   const router = useRouter();
   const { date } = router.query;
-
+  const dateString = typeof date === "string" ? date : new Date().toISOString().slice(0, 10);
+  
   // create a state for the post creation form
   const [type, setType] = useState<string>(''); //for eventType
   const [title, setTitle] = useState<string>(''); //for topic
   const [description, setDescription] = useState<string>('');  //for content
-  const [eventTime, setEventTime] = useState<string>(`${date}T09:00`);  //for eventDate
+  const [eventTime, setEventTime] = useState<string>(`${dateString}T09:00`);  //for eventDate
 
   // set states for input lengths
   const [descriptionLength, setDescriptionLength] = useState<number>(0);
