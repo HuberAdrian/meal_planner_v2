@@ -165,7 +165,7 @@ const AddEvent: NextPage = () => {
             required
             readOnly={type === "meal"}
           />
-          <p style={{ color: titleLength > 256 ? 'red' : 'text-gray-700' }}>
+         <p className={titleLength > 256 ? 'text-red-500' : 'text-gray-500'}>
               {titleLength} / 256
           </p>
         </div>
@@ -183,7 +183,7 @@ const AddEvent: NextPage = () => {
               setDescriptionLength(e.target.value.length);
             }}
           />
-            <p style={{ color: descriptionLength > 256 ? 'red' : 'text-gray-700' }}>
+           <p className={descriptionLength > 256 ? 'text-red-500' : 'text-gray-500'}>
               {descriptionLength} / 256
             </p>
         </div>
@@ -206,7 +206,7 @@ const AddEvent: NextPage = () => {
         <button
              className={`font-bold py-2 w-full rounded-lg focus:outline-none focus:shadow-outline ${!title || !eventTime ? 'bg-gray-500 cursor-not-allowed' : 'bg-blue-500 hover:bg-blue-700 text-white'}`} 
             onClick={handleSubmit}
-            disabled={!title || !eventTime}
+            disabled={!title || !eventTime || titleLength > 256 || descriptionLength > 256}
             >
                 Speichern
         </button>
