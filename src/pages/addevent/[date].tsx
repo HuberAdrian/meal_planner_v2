@@ -19,6 +19,11 @@ const AddEvent: NextPage = () => {
   const [description, setDescription] = useState<string>('');  //for content
   const [eventTime, setEventTime] = useState<string>(`${date}T09:00`);  //for eventDate
 
+  // set states for input lengths
+  const [descriptionLength, setDescriptionLength] = useState<number>(0);
+  const [titleLength, setTitleLength] = useState<number>(0);
+
+
   // get meal
   const { data, isLoading } = api.meal.getAll.useQuery();
 
@@ -153,10 +158,16 @@ const AddEvent: NextPage = () => {
             type="text"
             placeholder="Titel Event"
             value={title}
-            onChange={(e) => setTitle(e.target.value)}
+            onChange={(e) => {
+              setTitle(e.target.value);
+              setTitleLength(e.target.value.length);
+            }}
             required
             readOnly={type === "meal"}
           />
+          <p style={{ color: titleLength > 256 ? 'red' : 'text-gray-700' }}>
+              {titleLength} / 256
+          </p>
         </div>
         <div className="mb-4">
           <label className="block text-gray-700 font-bold mb-2" htmlFor="description">
@@ -167,8 +178,14 @@ const AddEvent: NextPage = () => {
             id="description"
             placeholder="Beschreibung"
             value={description}
-            onChange={(e) => setDescription(e.target.value)}
+            onChange={(e) => {
+              setDescription(e.target.value);
+              setDescriptionLength(e.target.value.length);
+            }}
           />
+            <p style={{ color: descriptionLength > 256 ? 'red' : 'text-gray-700' }}>
+              {descriptionLength} / 256
+            </p>
         </div>
         <div className="mb-4">
           <label className="block text-gray-700 font-bold mb-2" htmlFor="eventTime">
