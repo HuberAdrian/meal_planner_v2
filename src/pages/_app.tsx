@@ -16,7 +16,7 @@ const MyApp: AppType = ({ Component, pageProps }) => {
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black" />
-        <meta name="apple-mobile-web-app-title" content="App Title" />
+        <meta name="apple-mobile-web-app-title" content="11uhr11" />
         <title>Organisation</title>
         <meta name="description" content="Organisationsapp für Vivien" />
         <link rel="icon" href="/favicon.ico" />

@@ -17,7 +17,7 @@ const AddMeal: NextPage = () =>  {
   const { mutate, isLoading: isPosting } = api.meal.create.useMutation({
     onSuccess: () => {
       toast.success("Meal added!");
-      void router.push("/");
+      void router.push("/addmeal");
     },
     onError: (e) => {
       const errorMessage = e.data?.zodError?.fieldErrors.content;
