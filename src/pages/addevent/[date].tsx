@@ -17,7 +17,7 @@ const AddEvent: NextPage = () => {
   const [type, setType] = useState<string>(''); //for eventType
   const [title, setTitle] = useState<string>(''); //for topic
   const [description, setDescription] = useState<string>('');  //for content
-  const [eventTime, setEventTime] = useState<string>('');  //for eventDate
+  const [eventTime, setEventTime] = useState<string>(`${date}T09:00`);  //for eventDate
 
   // get meal
   const { data, isLoading } = api.meal.getAll.useQuery();
