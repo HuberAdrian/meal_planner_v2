@@ -135,7 +135,7 @@ export default function Home() {
     <>
       <Head>
         <title>Organisation</title>
-        <meta name="description" content="Organisationsapp für Vivien" />
+        <meta name="description" content="11uhr11" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
       <main className="flex flex-col sm:flex-row min-h-screen items-center bg-primary-400 p-4">
