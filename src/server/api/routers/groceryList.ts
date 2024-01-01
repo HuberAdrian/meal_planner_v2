@@ -62,12 +62,12 @@ delete: publicProcedure
   id: z.string(),
 }))
 .mutation(async ({ ctx, input }) => {
-  const post = await ctx.prisma.itemGroceryList.delete({
+  const item = await ctx.prisma.itemGroceryList.delete({
     where: {
       id: input.id,
     },
   });
 
-  return post;
+  return item;
 }),
 });

@@ -14,6 +14,7 @@ export const mealRouter = createTRPCRouter({
 .input(
   z.object({
     name: z.string(),
+    description: z.string(),
     ingredients: z.array(z.string()),
     completed: z.boolean().optional(),
   })
@@ -31,6 +32,7 @@ export const mealRouter = createTRPCRouter({
   const meal = await ctx.prisma.meal.create({
     data: {
       name: input.name,
+      description: input.description,
       ...ingredientsObject,
       completed: input.completed ?? false,
     },

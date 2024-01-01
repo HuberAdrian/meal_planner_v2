@@ -56,7 +56,8 @@ const Grocerylist: NextPage = () => {
       //  DELETE ITEM --------------------------
       const { mutate:deleting, isLoading: isDeleting } = api.groceryList.delete.useMutation({
         onSuccess: () => {
-            void toast.success("Item gelöscht!");
+            toast.success("Item gelöscht!");
+            void router.reload();
         },
         onError: (e) => {
           const errorMessage = e.data?.zodError?.fieldErrors.content;
@@ -116,6 +117,8 @@ const Grocerylist: NextPage = () => {
           {items.map(item => (
             <li key={item.id} className="flex justify-between items-center bg-white shadow p-4 mb-3">
               <span className={`flex-1 ${item.completed ? 'text-gray-500 line-through' : 'text-black'}`}>{item.name}</span>
+                <span className={`flex-1 ${item.completed ? 'text-gray-500 line-through' : 'text-gray-500'}`}>{item.id}</span>
+                <span className={`flex-1 ${item.completed ? 'text-gray-500 line-through' : 'text-gray-500'}`}>{item.reference}</span>
               <div>
                 {item.completed && (
                   <button onClick={() => handleRemove(item.id)} className="mr-4">

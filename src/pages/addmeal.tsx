@@ -11,6 +11,7 @@ import ToggleSwitch from '~/components/ToggleSwitch';
 const AddMeal: NextPage = () =>  {
   const router = useRouter();
   const [meal, setMeal] = useState('');
+  const [description, setDescription] = useState('');
   const [ingredients, setIngredients] = useState<string[]>(Array(6).fill(''));
   const [isPlusButtonDisabled, setPlusButtonDisabled] = useState(false);
 
@@ -33,6 +34,7 @@ const AddMeal: NextPage = () =>  {
     e.preventDefault();
     mutate({ 
         name: meal, 
+        description: description,
         ingredients: ingredients });
   };
 
@@ -60,10 +62,17 @@ const AddMeal: NextPage = () =>  {
       <ToggleSwitch onToggle={handleToggle} initialState={false} />
 
       <form onSubmit={onSubmit} className="w-full sm:max-w-md mx-auto rounded-xl overflow-y-scroll overflow-x-hidden p-4">
-        <div className="border p-4 rounded-lg mb-8">
+        <div className="border p-4 rounded-lg mb-2">
           <div className="mb-4">
             <label htmlFor="meal" className="block text-gray-700 font-bold mb-2">Name:</label>
             <input id="meal" value={meal} onChange={(e) => setMeal(e.target.value)} className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"/>
+          </div>
+        </div>
+
+        <div className="border p-4 rounded-lg mb-8">
+          <div className="mb-4">
+            <label htmlFor="description" className="block text-gray-700 font-bold mb-2">Beschreibung:</label>
+            <textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"/>
           </div>
         </div>
 

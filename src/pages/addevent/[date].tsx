@@ -116,6 +116,10 @@ const AddEvent: NextPage = () => {
               if (selectedMeal) {
                 setType("meal");
                 setTitle(selectedMeal.name);
+                if (selectedMeal.description) {
+                  setDescription(selectedMeal.description);
+                  setDescriptionLength(selectedMeal.description.length);
+                }
               } else {
                 setType('');
                 setTitle('');
