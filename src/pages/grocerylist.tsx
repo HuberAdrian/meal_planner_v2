@@ -40,7 +40,8 @@ const Grocerylist: NextPage = () => {
 
       const { mutate:creating, isLoading: isPosting } = api.groceryList.create.useMutation({
         onSuccess: () => {
-          void toast.success("Item hinzugefügt!");
+          toast.success("Item hinzugefügt!");
+          void router.reload();
         },
         onError: (e) => {
           const errorMessage = e.data?.zodError?.fieldErrors.content;
@@ -88,20 +89,7 @@ const Grocerylist: NextPage = () => {
       setItems(items.map(item => item.id === id ? { ...item, completed: !item.completed } : item));
     };
 
-  
-  
-    const handleAddItem = () => {
-      const newItem = {
-        id: String(items.length + 1), // This should be a unique ID, possibly generated on the backend
-        createdAt: new Date(),
-        usageDate: '', // Set usageDate as needed
-        name: newItemName,
-        reference: '', // Set reference as needed
-        completed: false,
-      };
-      setItems([...items, newItem]);
-      setNewItemName(''); // Clear the input field after adding
-    };
+
   
     if (isLoading || isPosting || isDeleting) return <div>Loading...</div>;
 
@@ -114,11 +102,11 @@ const Grocerylist: NextPage = () => {
             value={newItemName}
             onChange={(e) => setNewItemName(e.target.value)}
             placeholder="Neues Item"
-            className="border p-2 w-full mr-1 rounded mb-2"
+            className="border p-2 w-full mr-1 rounded mb-2 text-black"
           />
           <button
             type='submit'
-            className="bg-blue-500 hover:bg-blue-700 text-white font-bold w-10 border p-2 ml-1 mb-2 rounded"
+            className={`font-bold w-10 border p-2 ml-1 mb-2 rounded focus:outline-none focus:shadow-outline ${!newItemName ? 'bg-gray-500 cursor-not-allowed' : 'bg-blue-500 hover:bg-blue-700 text-white'}`}
             disabled={!newItemName}
           >
             +
