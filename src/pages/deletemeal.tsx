@@ -11,6 +11,7 @@ type Meal = {
   id: string;
   createdAt: Date;
   name: string;
+    description: string | null;
   ingredient1: string | null;
   ingredient2: string | null;
   ingredient3: string | null;
@@ -83,6 +84,7 @@ const DeleteMeal: NextPage = () =>  {
       {meals.map((meal, index) => (
         <div key={index} className="border p-4 rounded-lg mb-4 w-full sm:max-w-md mx-auto">
           <h2 className="text-2xl font-bold mb-2 text-white">{meal.name}</h2>
+          {meal.description && <p className="text-gray-700">{meal.description}</p>}
           {[meal.ingredient1, meal.ingredient2, meal.ingredient3, meal.ingredient4, meal.ingredient5].map((ingredient, index) => (
             ingredient && <p key={index} className="text-gray-700">{ingredient}</p>
           ))}
