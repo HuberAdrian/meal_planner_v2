@@ -34,6 +34,8 @@ model Meal {
     createdAt DateTime @default(now()) 
 
     name      String @db.VarChar(255)
+    description   String? @db.VarChar(255)
+    
     ingredient1   String? @db.VarChar(255)
     ingredient2   String? @db.VarChar(255)
     ingredient3   String? @db.VarChar(255)
