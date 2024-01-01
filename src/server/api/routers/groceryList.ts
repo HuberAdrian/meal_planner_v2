@@ -2,20 +2,6 @@ import { z } from "zod";
 
 import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
 
-/*
-model ItemGroceryList {
-    id        String   @id @default(cuid()) // generate a unique string identifier
-    createdAt DateTime @default(now()) 
-
-    usageDate   String 
-    name      String @db.VarChar(255)
-    reference   String @db.VarChar(255)
-    completed Boolean @default(false)
-
-    @@index([createdAt]) //will be indexed by createdAt
-}
-
-*/
 
 type ItemGroceryList = {
     id: string;
@@ -27,13 +13,22 @@ type ItemGroceryList = {
 };
 
 
-
 export const groceryRouter = createTRPCRouter({
   getAll: publicProcedure.query(({ ctx }) => {
     return ctx.prisma.itemGroceryList.findMany();
   }),
 
-      // create a post creation that takes in the topic, content and eventDate of the post and creates an entry in the database,
+
+  getAllOpen: publicProcedure.query(({ ctx }) => {
+    return ctx.prisma.itemGroceryList.findMany({
+      where: {
+        completed: false,
+      },
+    });
+  }),
+
+
+
   create: publicProcedure
   .input(
     z.object({
@@ -59,6 +54,7 @@ export const groceryRouter = createTRPCRouter({
     return item;
   }
 ),
+
 
 
 delete: publicProcedure
