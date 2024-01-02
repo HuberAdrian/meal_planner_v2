@@ -38,7 +38,8 @@ const DeleteMeal: NextPage = () =>  {
 
   const { mutate, isLoading: isPosting } = api.meal.delete.useMutation({
     onSuccess: () => {
-      router.reload();
+      toast.success("Gelöscht!");
+      void router.reload();
       
     },
     onError: (e) => {
@@ -51,10 +52,9 @@ const DeleteMeal: NextPage = () =>  {
     },
   });
 
-  const handleDelete = (id: string) => () => {
+  const handleDelete = (id: string) => {
     mutate({ id });
-    toast.success("Essen gelöscht!");
-  };
+};
 
 
   useEffect(() => {

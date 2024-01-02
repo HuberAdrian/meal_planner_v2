@@ -6,7 +6,7 @@ import { type NextPage } from "next";
 import { api } from "~/utils/api";
 import { useRouter } from 'next/router';
 import { toast } from 'react-hot-toast';
-import { on } from 'events';
+import { Loading } from '~/components/loading';
 
 
 type ItemGroceryList = {
@@ -80,10 +80,11 @@ const Grocerylist: NextPage = () => {
         setNewItemName('');
       };
     
-      const handleRemove = (id: string) => () => {
+
+      const handleRemove = (id: string) => {
         deleting({ id });
         toast.success("Essen gelöscht!");
-      };
+    };
 
     
     const handleCheck = (id: string) => {
@@ -92,7 +93,7 @@ const Grocerylist: NextPage = () => {
 
 
   
-    if (isLoading || isPosting || isDeleting) return <div>Loading...</div>;
+    if (isLoading || isPosting || isDeleting) return <Loading />;
 
     return (
       <div className="flex flex-col items-center p-4 pt-14 min-h-screen bg-primary-400">
@@ -114,11 +115,14 @@ const Grocerylist: NextPage = () => {
           </button>
         </form>
         <ul className="w-full max-w-md">
-          {items.map(item => (
-            <li key={item.id} className="flex justify-between items-center bg-white shadow p-4 mb-3">
+          {items.map(item =>{ 
+            const formattedDate = new Date(item.usageDate).toLocaleDateString('de-DE', { weekday: 'long', day: '2-digit', month: '2-digit' });
+            const [weekday, dayMonth] = formattedDate.split(', ');
+
+            return(
+            <li key={item.id} className="flex justify-between items-center overflow-scroll bg-white shadow p-4 mb-3">
               <span className={`flex-1 ${item.completed ? 'text-gray-500 line-through' : 'text-black'}`}>{item.name}</span>
-                <span className={`flex-1 ${item.completed ? 'text-gray-500 line-through' : 'text-gray-500'}`}>{item.id}</span>
-                <span className={`flex-1 ${item.completed ? 'text-gray-500 line-through' : 'text-gray-500'}`}>{item.reference}</span>
+            <span className={`flex-2 overflow-scroll ${item.completed ? 'text-gray-500 line-through' : 'text-gray-500'}`}>{item.reference} ({weekday}, {dayMonth})</span>
               <div>
                 {item.completed && (
                   <button onClick={() => handleRemove(item.id)} className="mr-4">
@@ -132,7 +136,8 @@ const Grocerylist: NextPage = () => {
                 </button>
               </div>
             </li>
-          ))}
+          )
+            })}
         </ul>
         <BottomNavBar activePage='grocerylist' />
       </div>
@@ -140,22 +145,3 @@ const Grocerylist: NextPage = () => {
   }
   
   export default Grocerylist;
-
-  /*
-  <div className="w-full max-w-md my-4">
-          <input
-            type="text"
-            value={newItemName}
-            onChange={(e) => setNewItemName(e.target.value)}
-            placeholder="Add new item"
-            className="border p-2 w-full mb-2"
-          />
-          <button
-            onClick={handleAddItem}
-            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-            disabled={!newItemName}
-          >
-            Add Item
-          </button>
-        </div>
-        */
