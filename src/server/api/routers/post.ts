@@ -1,12 +1,37 @@
 import { z } from "zod";
 
 import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
+import { groceryRouter } from "./groceryList";
 
-type Meal = {
+type MealMonth = {
   id: string;
   name: string;
   timesEaten: number;
 };
+
+type Meal = {
+  id: string;
+  createdAt: Date;
+  name: string;
+  description: string;
+  ingredient1: string;
+  ingredient2: string;
+  ingredient3: string;
+  ingredient4: string;
+  ingredient5: string;
+  ingredient6: string;
+  ingredient7: string;
+  ingredient8: string;
+  ingredient9: string;
+  ingredient10: string;
+  ingredient11: string;
+  ingredient12: string;
+  ingredient13: string;
+  ingredient14: string;
+  ingredient15: string;
+  completed: boolean;
+};
+
 
 type Post = {
   id: string;
@@ -27,6 +52,7 @@ export const postRouter = createTRPCRouter({
   create: publicProcedure
       .input(
         z.object({
+          mealID: z.string(),
           topic: z.string().min(1).max(280),
           content: z.string().min(1).max(280),
           eventDate: z.date(),
@@ -44,8 +70,47 @@ export const postRouter = createTRPCRouter({
             eventType: input.eventType,
           },
         });
-  
-        return post;
+
+        /*
+        // If the post is of type 'meal', add ingredients to the grocery list
+      if (input.eventType === 'meal') {
+        // get the meal from the database using the mealID
+        const meal = await ctx.prisma.meal.findUnique({
+          where: {
+            id: input.mealID,
+          },
+        });
+        
+        console.log("inside post create if statement for meal");
+        console.log(meal);
+
+
+        if (meal === null) {
+          throw new Error('Meal not found');
+        }
+
+        // loop through the ingredients of the meal and add them to the grocery list
+        const ingredients = [meal.ingredient1, meal.ingredient2, meal.ingredient3, meal.ingredient4, meal.ingredient5, meal.ingredient6, meal.ingredient7, meal.ingredient8, meal.ingredient9, meal.ingredient10, meal.ingredient11, meal.ingredient12, meal.ingredient13, meal.ingredient14, meal.ingredient15];
+          for (const ingredient of ingredients ) {
+            if (ingredient) {
+              await groceryRouter.create({
+                ctx,
+                input: {
+                  usageDate: input.eventDate.toISOString(),
+                  name: ingredient,
+                  reference: input.topic,
+                  completed: false,
+                },
+                rawInput: input,
+                path: "",
+                type: "query"
+              });
+            }
+          }
+      }
+      */
+
+      return post;
       }
     ),
 
@@ -101,7 +166,7 @@ export const postRouter = createTRPCRouter({
           });
     
           // group posts by topic (meal name) and count the number of times each meal was eaten
-          const meals: Record<string, Meal> = posts.reduce((acc, post) => {
+          const meals: Record<string, MealMonth> = posts.reduce((acc, post) => {
             if (!acc[post.topic]) {
               acc[post.topic] = {
                 id: post.id,
@@ -113,7 +178,7 @@ export const postRouter = createTRPCRouter({
             }
     
             return acc;
-          }, {} as Record<string, Meal>);
+          }, {} as Record<string, MealMonth>);
     
           // convert the meals object to an array of meals
           return Object.values(meals);

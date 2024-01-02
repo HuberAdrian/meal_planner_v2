@@ -121,8 +121,8 @@ const Grocerylist: NextPage = () => {
 
             return(
             <li key={item.id} className="flex justify-between items-center overflow-scroll bg-white shadow p-4 mb-3">
-              <span className={`flex-1 ${item.completed ? 'text-gray-500 line-through' : 'text-black'}`}>{item.name}</span>
-            <span className={`flex-2 overflow-scroll ${item.completed ? 'text-gray-500 line-through' : 'text-gray-500'}`}>{item.reference} ({weekday}, {dayMonth})</span>
+              <span className={` ${item.completed ? 'text-gray-500 line-through' : 'text-black'}`}>{item.name}</span>
+            <span className={` ml-2 mr-2 overflow-scroll ${item.completed ? 'text-gray-500 line-through' : 'text-gray-500'}`}>{item.reference} ({weekday}, {dayMonth})</span>
               <div>
                 {item.completed && (
                   <button onClick={() => handleRemove(item.id)} className="mr-4">

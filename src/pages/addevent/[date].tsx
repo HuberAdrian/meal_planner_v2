@@ -19,6 +19,7 @@ const AddEvent: NextPage = () => {
   const [title, setTitle] = useState<string>(''); //for topic
   const [description, setDescription] = useState<string>('');  //for content
   const [eventTime, setEventTime] = useState<string>(`${dateString}T10:00`);  //for eventDate
+  const [mealID, setMealID] = useState<string>(''); //for mealID
 
   // set states for input lengths
   const [descriptionLength, setDescriptionLength] = useState<number>(0);
@@ -70,6 +71,7 @@ const AddEvent: NextPage = () => {
     const eventDate = new Date(eventTime);
 
     const mutationData = {
+      mealID,
       eventType: eventT,
       topic: title,
       content: "-",
@@ -116,6 +118,7 @@ const AddEvent: NextPage = () => {
               if (selectedMeal) {
                 setType("meal");
                 setTitle(selectedMeal.name);
+                setMealID(selectedMeal.id);
                 if (selectedMeal.description) {
                   setDescription(selectedMeal.description);
                   setDescriptionLength(selectedMeal.description.length);
