@@ -71,7 +71,7 @@ export const postRouter = createTRPCRouter({
           },
         });
 
-        /*
+        
         // If the post is of type 'meal', add ingredients to the grocery list
       if (input.eventType === 'meal') {
         // get the meal from the database using the mealID
@@ -83,12 +83,16 @@ export const postRouter = createTRPCRouter({
         
         console.log("inside post create if statement for meal");
         console.log(meal);
+        console.log(input.mealID);
+      
 
 
         if (meal === null) {
-          throw new Error('Meal not found');
+          throw new Error('Essen nicht gefunden, Einkaufsliste nicht erstellt');
         }
 
+      }
+        /*
         // loop through the ingredients of the meal and add them to the grocery list
         const ingredients = [meal.ingredient1, meal.ingredient2, meal.ingredient3, meal.ingredient4, meal.ingredient5, meal.ingredient6, meal.ingredient7, meal.ingredient8, meal.ingredient9, meal.ingredient10, meal.ingredient11, meal.ingredient12, meal.ingredient13, meal.ingredient14, meal.ingredient15];
           for (const ingredient of ingredients ) {
@@ -109,6 +113,7 @@ export const postRouter = createTRPCRouter({
           }
       }
       */
+      
 
       return post;
       }
