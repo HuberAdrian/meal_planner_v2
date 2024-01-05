@@ -107,7 +107,7 @@ const AddMeal: NextPage = () =>  {
         </div>
       </form>
       <div className="h-16" />
-      <BottomNavBar activePage="addMeal" />
+      <BottomNavBar activePage="addmeal" />
     </div>
   );
 }

@@ -94,7 +94,7 @@ const DeleteMeal: NextPage = () =>  {
         </div>
       ))}
       <div className="h-16" />
-      <BottomNavBar activePage="addMeal" />
+      <BottomNavBar activePage="addmeal" />
     </div>
   );
 }
