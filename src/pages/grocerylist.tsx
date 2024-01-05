@@ -91,6 +91,15 @@ const Grocerylist: NextPage = () => {
       setItems(items.map(item => item.id === id ? { ...item, completed: !item.completed } : item));
     };
 
+    // get all list items that have item.completed = true and delete them from the list 
+    const handleDeleteAll = () => {
+        const completedItems = items.filter(item => item.completed);
+        console.log(completedItems);
+    
+        completedItems.forEach(item => {
+            handleRemove(item.id);
+        });
+    };
 
   
     if (isLoading || isPosting || isDeleting) return <Loading />;
@@ -133,6 +142,10 @@ const Grocerylist: NextPage = () => {
             })}
         </ul>
         <BottomNavBar activePage='grocerylist' />
+        <button onClick={handleDeleteAll} className="p-4 bg-red-500 text-white rounded-full mr-4 mb-4">
+          <FaCheckCircle color="white" size={30} />
+        </button>
+        <div className="h-16" />
       </div>
     );
   }
