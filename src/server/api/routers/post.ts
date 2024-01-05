@@ -91,29 +91,38 @@ export const postRouter = createTRPCRouter({
           throw new Error('Essen nicht gefunden, Einkaufsliste nicht erstellt');
         }
 
-      }
-        /*
-        // loop through the ingredients of the meal and add them to the grocery list
-        const ingredients = [meal.ingredient1, meal.ingredient2, meal.ingredient3, meal.ingredient4, meal.ingredient5, meal.ingredient6, meal.ingredient7, meal.ingredient8, meal.ingredient9, meal.ingredient10, meal.ingredient11, meal.ingredient12, meal.ingredient13, meal.ingredient14, meal.ingredient15];
-          for (const ingredient of ingredients ) {
-            if (ingredient) {
-              await groceryRouter.create({
-                ctx,
-                input: {
-                  usageDate: input.eventDate.toISOString(),
-                  name: ingredient,
-                  reference: input.topic,
-                  completed: false,
-                },
-                rawInput: input,
-                path: "",
-                type: "query"
-              });
-            }
-          }
-      }
-      */
       
+      const ingredients = [
+        meal.ingredient1,
+        meal.ingredient2,
+        meal.ingredient3,
+        meal.ingredient4,
+        meal.ingredient5,
+        meal.ingredient6,
+        meal.ingredient7,
+        meal.ingredient8,
+        meal.ingredient9,
+        meal.ingredient10,
+        meal.ingredient11,
+        meal.ingredient12,
+        meal.ingredient13,
+        meal.ingredient14,
+        meal.ingredient15,
+      ].filter((ingredient): ingredient is string => ingredient !== null && ingredient.trim() !== '');
+
+    
+      for (const ingredient of ingredients) {
+        await ctx.prisma.itemGroceryList.create({
+          data: {
+            usageDate: input.eventDate.toISOString(),
+            name: ingredient,
+            reference: input.topic,
+            completed: false,
+          },
+        });
+      }
+    }
+
 
       return post;
       }
