@@ -130,18 +130,40 @@ export const postRouter = createTRPCRouter({
 
 
     delete: publicProcedure
-    .input(z.object({
-      id: z.string(),
-    }))
-    .mutation(async ({ ctx, input }) => {
-      const post = await ctx.prisma.post.delete({
+  .input(z.object({
+    id: z.string(),
+  }))
+  .mutation(async ({ ctx, input }) => {
+    // First, get the post to be deleted
+    const post = await ctx.prisma.post.findUnique({
+      where: {
+        id: input.id,
+      },
+    });
+
+    if (!post) {
+      throw new Error('Post not found');
+    }
+
+    // If the post eventType is 'meal', delete the corresponding items in the grocery list
+    if (post.eventType === 'meal') {
+      await ctx.prisma.itemGroceryList.deleteMany({
         where: {
-          id: input.id,
+          usageDate: post.eventDate.toISOString(),
+          reference: post.topic,
         },
       });
+    }
 
-      return post;
-    }),
+    // Then, delete the post
+    const deletedPost = await ctx.prisma.post.delete({
+      where: {
+        id: input.id,
+      },
+    });
+
+    return deletedPost;
+  }),
 
 
 
