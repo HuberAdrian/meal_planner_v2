@@ -44,8 +44,16 @@ type Post = {
 };
 
 export const postRouter = createTRPCRouter({
-  getAll: publicProcedure.query(({ ctx }) => {
-    return ctx.prisma.post.findMany();
+  getAllExceptPast: publicProcedure.query(({ ctx }) => {
+    return ctx.prisma.post.findMany(
+      {
+        where: {
+          eventDate: {
+            gte: new Date(),
+          },
+        },
+      }
+    );
   }),
   
       // create a post creation that takes in the topic, content and eventDate of the post and creates an entry in the database,

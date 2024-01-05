@@ -74,7 +74,7 @@ export default function Home() {
   
   const [dates, setDates] = useState(generateNextTwoWeeks());
 
-  const { data, isLoading } = api.post.getAll.useQuery();
+  const { data, isLoading } = api.post.getAllExceptPast.useQuery();
 
   const user = useUser();
 
@@ -115,7 +115,6 @@ export default function Home() {
     onLoadMore: loadMore,
   });
 
-
   // ------------------ ERROR / NOT SIGNED IN ------------------
 
   if (!user.isSignedIn) return <LandingPage />;
@@ -124,12 +123,7 @@ export default function Home() {
   if(!data) return <Error />;
 
 
-
-
   const groupedPosts = groupPostsByDate(data);
-
-
-
 
   return (
     <>
@@ -154,6 +148,14 @@ export default function Home() {
     </>
   );
 }
+
+
+
+
+
+
+
+
 
 
 
