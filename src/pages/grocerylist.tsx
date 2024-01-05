@@ -28,6 +28,7 @@ const Grocerylist: NextPage = () => {
     const [items, setItems] = useState<ItemGroceryList[]>(initialItemGroceryList);
     const [newItemName, setNewItemName] = useState('');
     const router = useRouter();
+    const [isAnyItemCompleted, setIsAnyItemCompleted] = useState(false);
 
     const { data, isLoading } = api.groceryList.getAllOpen.useQuery();
 
@@ -36,6 +37,11 @@ const Grocerylist: NextPage = () => {
           setItems(data);
         }
       }, [data]);
+
+    useEffect(() => {
+        const anyCompleted = items.some(item => item.completed);
+        setIsAnyItemCompleted(anyCompleted);
+    }, [items]);
   
 
       const { mutate:creating, isLoading: isPosting } = api.groceryList.create.useMutation({
@@ -129,7 +135,7 @@ const Grocerylist: NextPage = () => {
             const [weekday, dayMonth] = formattedDate.split(', ');
 
             return(
-                <li key={item.id} onClick={() => handleCheck(item.id)} className="flex items-center bg-white shadow p-4 mb-3 ">
+                <li key={item.id} onClick={() => handleCheck(item.id)} className="rounded-lg flex items-center bg-white shadow p-4 mb-3 ">
     <span className={`flex-grow w-[30%] ${item.completed ? 'text-gray-500 line-through' : 'text-black'}`}>{item.name}</span>
     <span className={`flex-grow w-[70%] ml-2 mr-2 overflow-x-scroll ${item.completed ? 'text-gray-500 line-through' : 'text-gray-500'}`}>{item.reference} ({weekday}, {dayMonth})</span>
     {item.completed && (
@@ -142,8 +148,12 @@ const Grocerylist: NextPage = () => {
             })}
         </ul>
         <BottomNavBar activePage='grocerylist' />
-        <button onClick={handleDeleteAll} className="p-4 bg-red-500 text-white rounded-full mr-4 mb-4">
-          <FaCheckCircle color="white" size={30} />
+        <button
+            className={`max-w-md font-bold py-2 w-full rounded-lg focus:outline-none focus:shadow-outline ${!isAnyItemCompleted ? 'bg-gray-500 cursor-not-allowed' : 'bg-red-500 hover:bg-red-700 text-white'}`} 
+            onClick={handleDeleteAll}
+            disabled={!isAnyItemCompleted}
+            >
+                Löschen
         </button>
         <div className="h-16" />
       </div>
