@@ -74,8 +74,8 @@ const Grocerylist: NextPage = () => {
         creating({ 
             name: newItemName,
             completed: false,
-            usageDate: '-',
-            reference: '-',
+            usageDate: new Date().toISOString().slice(0, 10),
+            reference: 'Manuell',
         });
         setNewItemName('');
       };
@@ -120,22 +120,15 @@ const Grocerylist: NextPage = () => {
             const [weekday, dayMonth] = formattedDate.split(', ');
 
             return(
-            <li key={item.id} className="flex justify-between items-center overflow-scroll bg-white shadow p-4 mb-3">
-              <span className={` ${item.completed ? 'text-gray-500 line-through' : 'text-black'}`}>{item.name}</span>
-            <span className={` ml-2 mr-2 overflow-scroll ${item.completed ? 'text-gray-500 line-through' : 'text-gray-500'}`}>{item.reference} ({weekday}, {dayMonth})</span>
-              <div>
-                {item.completed && (
-                  <button onClick={() => handleRemove(item.id)} className="mr-4">
-                    <FaTimesCircle color="red" />
-                  </button>
-                )}
-              </div>
-              <div>
-                <button onClick={() => handleCheck(item.id)}>
-                  <FaCheckCircle color={item.completed ? 'gray' : 'green'} />
-                </button>
-              </div>
-            </li>
+                <li key={item.id} onClick={() => handleCheck(item.id)} className="flex items-center bg-white shadow p-4 mb-3 ">
+    <span className={`flex-grow w-[30%] ${item.completed ? 'text-gray-500 line-through' : 'text-black'}`}>{item.name}</span>
+    <span className={`flex-grow w-[70%] ml-2 mr-2 overflow-x-scroll ${item.completed ? 'text-gray-500 line-through' : 'text-gray-500'}`}>{item.reference} ({weekday}, {dayMonth})</span>
+    {item.completed && (
+      <button onClick={() => handleRemove(item.id)} className="mr-4">
+        <FaTimesCircle color="red" />
+      </button>
+    )}
+  </li>
           )
             })}
         </ul>
