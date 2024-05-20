@@ -1,6 +1,5 @@
-import { SignInButton, useUser, SignOutButton } from "@clerk/nextjs";
+import { SignInButton, useUser } from "@clerk/nextjs";
 import Head from "next/head";
-import Link from "next/link";
 import BottomNavBar from "~/components/BottomNavBar";
 import { Error, Loading } from "~/components/loading";
 import { api } from "~/utils/api";
@@ -137,6 +136,7 @@ export default function Home() {
   );
 }
 
+
 const Day: React.FC<DayProps> = ({ date, posts }) => {
   const router = useRouter();
 
@@ -149,12 +149,7 @@ const Day: React.FC<DayProps> = ({ date, posts }) => {
       router.reload();
     },
     onError: (e) => {
-      const errorMessage = e.data?.zodError?.fieldErrors.content;
-      if (errorMessage?.[0]) {
-        toast.error(errorMessage[0]);
-      } else {
         toast.error("Fehler beim Löschen");
-      }
     },
   });
 
