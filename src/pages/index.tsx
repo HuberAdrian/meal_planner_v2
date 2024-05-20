@@ -1,12 +1,12 @@
-import { SignInButton, useUser } from "@clerk/nextjs";
+import { SignInButton, useUser} from "@clerk/nextjs";
 import Head from "next/head";
 import BottomNavBar from "~/components/BottomNavBar";
 import { Error, Loading } from "~/components/loading";
 import { api } from "~/utils/api";
-import { AwaitedReactNode, JSXElementConstructor, Key, ReactElement, ReactNode, ReactPortal, useState } from "react";
-import { FiPlus, FiX } from "react-icons/fi";
+import { useState } from "react";
+import { FiPlus, FiX, FiChevronLeft, FiChevronRight } from "react-icons/fi";
 import { useRouter } from 'next/router';
-import  useInfiniteScroll  from 'react-infinite-scroll-hook';
+import useInfiniteScroll from 'react-infinite-scroll-hook';
 import toast from "react-hot-toast";
 
 type Post = {
@@ -60,6 +60,7 @@ const LandingPage: React.FC = () => {
 export default function Home() {
   const [dates, setDates] = useState(generateNextTwoWeeks());
   const [view, setView] = useState<'infinite' | 'monthly'>('infinite');
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
   const { data, isLoading } = api.post.getAllExceptPast.useQuery();
   const user = useUser();
@@ -114,7 +115,10 @@ export default function Home() {
           <h2 className="text-4xl text-center py-4 sticky top-0 z-10">Kalender</h2>
           <button
             className="mb-4 p-2 bg-blue-500 text-white rounded"
-            onClick={() => setView(view === 'infinite' ? 'monthly' : 'infinite')}
+            onClick={() => {
+              setView(view === 'infinite' ? 'monthly' : 'infinite');
+              setSelectedDate(null);
+            }}
           >
             {view === 'infinite' ? 'Switch to Monthly View' : 'Switch to Infinite Scroll'}
           </button>
@@ -125,7 +129,12 @@ export default function Home() {
               ))}
             </ul>
           ) : (
-            <MonthlyView posts={data} />
+            <MonthlyView 
+              posts={data} 
+              selectedDate={selectedDate}
+              setSelectedDate={setSelectedDate} 
+              groupedPosts={groupedPosts}
+            />
           )}
           {view === 'infinite' && <div ref={infiniteRef}>Laden...</div>}
         </div>
@@ -135,7 +144,6 @@ export default function Home() {
     </>
   );
 }
-
 
 const Day: React.FC<DayProps> = ({ date, posts }) => {
   const router = useRouter();
@@ -200,40 +208,77 @@ const Day: React.FC<DayProps> = ({ date, posts }) => {
   );
 }
 
-const MonthlyView: React.FC<{ posts: Post[] }> = ({ posts }) => {
-  const currentMonth = new Date().getMonth();
-  const currentYear = new Date().getFullYear();
+const MonthlyView: React.FC<{ posts: Post[], selectedDate: string | null, setSelectedDate: (date: string | null) => void, groupedPosts: GroupedPosts }> = ({ posts, selectedDate, setSelectedDate, groupedPosts }) => {
+  const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
+  const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
 
   const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
-  const firstDayOfMonth = new Date(currentYear, currentMonth, 1).getDay();
+  const firstDayOfMonth = (new Date(currentYear, currentMonth, 1).getDay() + 6) % 7; // Adjust to start from Monday
 
   const daysArray = Array.from({ length: daysInMonth }, (_, i) => i + 1);
 
-  const groupedPosts = groupPostsByDate(posts);
+  const handlePrevMonth = () => {
+    if (currentMonth === 0) {
+      setCurrentMonth(11);
+      setCurrentYear(currentYear - 1);
+    } else {
+      setCurrentMonth(currentMonth - 1);
+    }
+    setSelectedDate(null);
+  };
+
+  const handleNextMonth = () => {
+    if (currentMonth === 11) {
+      setCurrentMonth(0);
+      setCurrentYear(currentYear + 1);
+    } else {
+      setCurrentMonth(currentMonth + 1);
+    }
+    setSelectedDate(null);
+  };
 
   return (
-    <div className="grid grid-cols-7 gap-2">
-      {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
-        <div key={day} className="text-center font-bold">{day}</div>
-      ))}
-      {Array.from({ length: firstDayOfMonth }).map((_, i) => (
-        <div key={i}></div>
-      ))}
-      {daysArray.map((day) => {
-        const date = new Date(currentYear, currentMonth, day).toISOString().split('T')[0] ?? "";
-        const postsForDay = groupedPosts[date] ?? [];
+    <div>
+      <div className="flex justify-between items-center mb-4">
+        <FiChevronLeft onClick={handlePrevMonth} className="cursor-pointer" />
+        <span className="text-xl font-bold">{new Date(currentYear, currentMonth).toLocaleDateString('de-DE', { month: 'long', year: 'numeric' })}</span>
+        <FiChevronRight onClick={handleNextMonth} className="cursor-pointer" />
+      </div>
+      <div className="grid grid-cols-7 gap-2">
+        {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((day) => (
+          <div key={day} className="text-center font-bold">{day}</div>
+        ))}
+        {Array.from({ length: firstDayOfMonth }).map((_, i) => (
+          <div key={i}></div>
+        ))}
+        {daysArray.map((day) => {
+          const date = new Date(currentYear, currentMonth, day).toISOString().split('T')[0];
+          if (date === undefined) return null;
+          const postsForDay = groupedPosts[date] ?? [];
 
-        return (
-          <div key={day} className="border p-2">
-            <div className="text-center font-bold">{day}</div>
-            {postsForDay.map((post: { id: Key | null | undefined; topic: string | number | bigint | boolean | ReactElement<any, string | JSXElementConstructor<any>> | Iterable<ReactNode> | ReactPortal | Promise<AwaitedReactNode> | null | undefined; }) => (
-              <div key={post.id} className="text-xs">
-                {post.topic}
-              </div>
-            ))}
-          </div>
-        );
-      })}
+          const isSelected = selectedDate === date;
+
+          return (
+            <div 
+              key={day} 
+              className={`border p-2 cursor-pointer ${isSelected ? 'bg-primary-100 text-white' : ''}`}
+              onClick={() => setSelectedDate(isSelected ? null : date)}
+            >
+              <div className={`text-center font-bold ${isSelected ? 'text-white' : ''}`}>{day}</div>
+              {postsForDay.map((post: Post) => (
+                <div key={post.id} className="text-xs">
+                  {post.topic}
+                </div>
+              ))}
+            </div>
+          );
+        })}
+      </div>
+      {selectedDate && (
+        <div className="mt-4">
+          <Day date={selectedDate} posts={groupedPosts[selectedDate] ?? []} />
+        </div>
+      )}
     </div>
   );
 };
