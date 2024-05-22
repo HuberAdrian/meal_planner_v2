@@ -173,9 +173,14 @@ const AddEvent: NextPage = () => {
             required
             readOnly={type === "meal"}
           />
-         <p className={titleLength > 256 ? 'text-red-500' : 'text-gray-500'}>
-              {titleLength} / 256
+        <div className="flex justify-between">
+          <p className={titleLength > 256 ? 'text-red-500' : 'text-gray-500'}>
+            {titleLength} / 256
           </p>
+          <p className="italic text-gray-500">
+            z.B. "9e4io1e"
+          </p>
+      </div>
         </div>
         <div className="mb-4">
           <label className="block text-gray-700 font-bold mb-2" htmlFor="description">
