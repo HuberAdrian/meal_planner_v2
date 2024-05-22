@@ -35,7 +35,7 @@ const timeOptions: Record<TimeOptionsKeys, string> = {
   "Abends": "19:00",
 };
 
-// landing page if user is not signed in
+// ------------------ NOT LOGGED IN ------------------
 const LandingPage: React.FC = () => {
   const [currentImage, setCurrentImage] = useState(0);
   const images = ["/Vivien.png", "/Adrian.png", "/Benni.png"];
@@ -57,6 +57,8 @@ const LandingPage: React.FC = () => {
     </div>
   );
 };
+
+// ------------------ HOME VIEW ------------------
 
 export default function Home() {
   const [dates, setDates] = useState(generateNextTwoWeeks());
@@ -211,6 +213,9 @@ const Day: React.FC<DayProps> = ({ date, posts }) => {
   );
 }
 
+
+// ----------------- Monthly View -----------------
+
 const MonthlyView: React.FC<{ posts: Post[], selectedDate: string | null, setSelectedDate: (date: string | null) => void, groupedPosts: GroupedPosts }> = ({ posts, selectedDate, setSelectedDate, groupedPosts }) => {
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
@@ -248,7 +253,7 @@ const MonthlyView: React.FC<{ posts: Post[], selectedDate: string | null, setSel
         <FiChevronRight onClick={handleNextMonth} className="cursor-pointer" />
       </div>
       <div className="grid grid-cols-7 rounded-none gap-2">
-        {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((day) => (
+        {["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"].map((day) => (
           <div key={day} className="text-center font-bold">{day}</div>
         ))}
         {Array.from({ length: firstDayOfMonth }).map((_, i) => (
@@ -268,12 +273,10 @@ const MonthlyView: React.FC<{ posts: Post[], selectedDate: string | null, setSel
               onClick={() => setSelectedDate(isSelected ? null : date)}
             >
               <div className={`text-center font-bold ${isSelected ? 'text-white' : ''}`}>{day}</div>
-              {postsForDay.map((post: Post) => (
-                <div key={post.id} className="text-xs">
-                  {post.topic}
-                </div>
-              ))}
-            </div>
+              {postsForDay.length > 0 && (
+                <div className={`w-2 h-2 rounded-full mx-auto mt-1 ${postsForDay.some(post => post.topic === '9e4io1e') ? 'bg-red-500' : 'bg-white'}`}></div>
+              )}
+              </div>
           );
         })}
       </div>
@@ -285,6 +288,9 @@ const MonthlyView: React.FC<{ posts: Post[], selectedDate: string | null, setSel
     </div>
   );
 };
+
+
+// ----------------- SUPPORT FUNCTIONS -----------------
 
 function groupPostsByDate(posts: Post[]): GroupedPosts {
   return posts.reduce((groupedPosts: GroupedPosts, post) => {
