@@ -43,6 +43,7 @@ type Post = {
   deleted: boolean;
 };
 
+/*
 export const postRouter = createTRPCRouter({
   getAllExceptPast: publicProcedure.query(({ ctx }) => {
     return ctx.prisma.post.findMany(
@@ -230,4 +231,172 @@ export const postRouter = createTRPCRouter({
     
 
 
+});
+
+*/
+
+
+export const postRouter = createTRPCRouter({
+  getAllExceptPast: publicProcedure.query(({ ctx }) => {
+    return ctx.prisma.post.findMany({
+      where: {
+        eventDate: {
+          gte: new Date(),
+        },
+      },
+    });
+  }),
+
+  create: publicProcedure
+    .input(
+      z.object({
+        mealID: z.string(),
+        topic: z.string().min(1).max(280),
+        content: z.string().min(1).max(280),
+        eventDate: z.date(),
+        eventType: z.string().min(1).max(280),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const post = await ctx.prisma.post.create({
+        data: {
+          topic: input.topic,
+          content: input.content,
+          eventDate: input.eventDate,
+          eventType: input.eventType,
+        },
+      });
+
+      // If the post is of type 'meal', add ingredients to the grocery list
+      if (input.eventType === 'meal') {
+        // get the meal from the database using the mealID
+        const meal = await ctx.prisma.meal.findUnique({
+          where: {
+            id: input.mealID,
+          },
+        });
+
+        if (meal === null) {
+          throw new Error('Essen nicht gefunden, Einkaufsliste nicht erstellt');
+        }
+
+        const ingredients = [
+          meal.ingredient1,
+          meal.ingredient2,
+          meal.ingredient3,
+          meal.ingredient4,
+          meal.ingredient5,
+          meal.ingredient6,
+          meal.ingredient7,
+          meal.ingredient8,
+          meal.ingredient9,
+          meal.ingredient10,
+          meal.ingredient11,
+          meal.ingredient12,
+          meal.ingredient13,
+          meal.ingredient14,
+          meal.ingredient15,
+        ].filter((ingredient) => ingredient !== null && ingredient.trim() !== '');
+
+        for (let i = 0; i < ingredients.length; i++) {
+          await ctx.prisma.itemGroceryList.create({
+            data: {
+              usageDate: input.eventDate.toISOString(),
+              name: ingredients[i]!,
+              reference: input.topic,
+              completed: false,
+              category: meal.categories[i] ?? 'Sonstiges', // Default to 'Sonstiges' if no category is provided
+            },
+          });
+        }
+      }
+
+      return post;
+    }),
+
+  delete: publicProcedure
+    .input(z.object({
+      id: z.string(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      // First, get the post to be deleted
+      const post = await ctx.prisma.post.findUnique({
+        where: {
+          id: input.id,
+        },
+      });
+
+      if (!post) {
+        throw new Error('Post not found');
+      }
+
+      // If the post eventType is 'meal', delete the corresponding items in the grocery list
+      if (post.eventType === 'meal') {
+        await ctx.prisma.itemGroceryList.deleteMany({
+          where: {
+            usageDate: post.eventDate.toISOString(),
+            reference: post.topic,
+          },
+        });
+      }
+
+      // Then, delete the post
+      const deletedPost = await ctx.prisma.post.delete({
+        where: {
+          id: input.id,
+        },
+      });
+
+      return deletedPost;
+    }),
+
+  getOneMonth: publicProcedure
+    .input(z.object({
+      date: z.date(),
+    }))
+    .query(async ({ ctx, input }) => {
+      const month = input.date.getMonth() + 1;  // JavaScript months are 0-indexed
+      const year = input.date.getFullYear();
+
+      const posts = await ctx.prisma.post.findMany({
+        where: {
+          AND: [
+            {
+              eventDate: {
+                gte: new Date(year, month - 1, 1), // start of the month
+              },
+            },
+            {
+              eventDate: {
+                lt: new Date(month === 12 ? year + 1 : year, month === 12 ? 0 : month, 1), // start of the next month
+              },
+            },
+            {
+              eventType: 'meal', // filter for meals
+            },
+            {
+              deleted: false, // filter out deleted posts
+            },
+          ],
+        },
+      });
+
+      // group posts by topic (meal name) and count the number of times each meal was eaten
+      const meals: Record<string, MealMonth> = posts.reduce((acc, post) => {
+        if (!acc[post.topic]) {
+          acc[post.topic] = {
+            id: post.id,
+            name: post.topic,
+            timesEaten: 1,
+          };
+        } else {
+          acc[post.topic]!.timesEaten++;
+        }
+
+        return acc;
+      }, {} as Record<string, MealMonth>);
+
+      // convert the meals object to an array of meals
+      return Object.values(meals);
+    }),
 });

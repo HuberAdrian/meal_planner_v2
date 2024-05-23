@@ -46,6 +46,7 @@ model Meal {
     ingredient13 String?
     ingredient14 String?
     ingredient15 String?
+    categories  String[]
     completed   Boolean  @default(false)
 
     @@index([createdAt])
@@ -58,6 +59,7 @@ model ItemGroceryList {
     name      String
     reference String
     completed Boolean  @default(false)
+    category    String   @default("Other")
 
     @@index([createdAt])
 }

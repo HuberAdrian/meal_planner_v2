@@ -7,13 +7,25 @@ import { api } from "~/utils/api";
 import { useRouter } from 'next/router';
 import ToggleSwitch from '~/components/ToggleSwitch';
 
-
 const AddMeal: NextPage = () =>  {
   const router = useRouter();
   const [meal, setMeal] = useState('');
   const [description, setDescription] = useState('');
   const [ingredients, setIngredients] = useState<string[]>(Array(6).fill(''));
+  const [categories, setCategories] = useState<string[]>(Array(6).fill('')); // Add this line
   const [isPlusButtonDisabled, setPlusButtonDisabled] = useState(false);
+
+  const categoryOptions = [
+    "Obst & Gemüse",
+    "Frühstück",
+    "Snacks",
+    "Teigwaren",
+    "Backen",
+    "Milchprodukte",
+    "Kühlfach",
+    "Sonstiges",
+    "Haushalt"
+  ];
 
   const { mutate, isLoading: isPosting } = api.meal.create.useMutation({
     onSuccess: () => {
@@ -33,17 +45,18 @@ const AddMeal: NextPage = () =>  {
   const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     mutate({ 
-        name: meal, 
-        description: description,
-        ingredients: ingredients });
+      name: meal, 
+      description: description,
+      ingredients: ingredients,
+      categories: categories, // Add this line
+    });
   };
 
-  
   const handleAddMore = () => {
     setIngredients((prevIngredients: string[]) => [...prevIngredients, ...(Array(9).fill('') as string[])]);
+    setCategories((prevCategories: string[]) => [...prevCategories, ...(Array(9).fill('') as string[])]); // Add this line
     setPlusButtonDisabled(true);
   };
-
 
   const handleToggle = (state: boolean) => {
     // Here you can handle the state change
@@ -54,7 +67,6 @@ const AddMeal: NextPage = () =>  {
       void router.push("/addmeal");
     }
   };
-
 
   return (
     <div className="flex flex-col items-center p-4 pt-14 min-h-screen bg-primary-400">
@@ -87,6 +99,22 @@ const AddMeal: NextPage = () =>  {
                        setIngredients(newIngredients);
                      }}
                      className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"/>
+              <label htmlFor={`category${index}`} className="block text-gray-700 font-bold mb-2">Kategorie:</label>
+              <select 
+                id={`category${index}`} 
+                value={categories[index]} 
+                onChange={(e) => {
+                  const newCategories = [...categories];
+                  newCategories[index] = e.target.value;
+                  setCategories(newCategories);
+                }}
+                className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+              >
+                <option value="">Kategorie wählen</option>
+                {categoryOptions.map((option, idx) => (
+                  <option key={idx} value={option}>{option}</option>
+                ))}
+              </select>
             </div>
           ))}
 
