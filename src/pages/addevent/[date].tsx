@@ -178,8 +178,9 @@ const AddEvent: NextPage = () => {
             {titleLength} / 256
           </p>
           <p className="italic text-gray-500">
-            z.B. "9e4io1e"
+            z.B. &quot;9e4io1e&quot;
           </p>
+
       </div>
         </div>
         <div className="mb-4">
