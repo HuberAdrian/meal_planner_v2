@@ -48,7 +48,7 @@ export const groceryRouter = createTRPCRouter({
         name: z.string().min(1).max(280),
         reference: z.string().min(1).max(280),
         completed: z.boolean().optional(),
-        category: z.string().min(1).max(280),  // Add this line
+        category: z.string().min(1).max(280),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -58,7 +58,7 @@ export const groceryRouter = createTRPCRouter({
           name: input.name,
           reference: input.reference,
           completed: input.completed,
-          category: input.category,  // Add this line
+          category: input.category,
         },
       });
 

@@ -29,6 +29,7 @@ type Meal = {
   ingredient13: string;
   ingredient14: string;
   ingredient15: string;
+  categories: string[];
   completed: boolean;
 };
 
