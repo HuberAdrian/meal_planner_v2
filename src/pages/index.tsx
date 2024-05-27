@@ -130,7 +130,10 @@ export default function Home() {
           {view === 'infinite' ? (
             <ul className="px-2 py-2">
               {dates.map((date, index) => (
-                <Day key={index} date={date} posts={groupedPosts[date] ?? []} />
+                <div>
+                  <hr className="border-t border-gray-300 mt-4 mb-2 mx-4" />
+                  <Day key={index} date={date} posts={groupedPosts[date] ?? []} />
+                </div>
               ))}
             </ul>
           ) : (

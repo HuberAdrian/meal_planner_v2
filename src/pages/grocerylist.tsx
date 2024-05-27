@@ -15,6 +15,7 @@ type ItemGroceryList = {
   name: string;
   reference: string;
   completed: boolean;
+  category: string;
 };
 
 const Grocerylist: NextPage = () => {
@@ -36,22 +37,21 @@ const Grocerylist: NextPage = () => {
     setIsAnyItemCompleted(anyCompleted);
   }, [items]);
 
-
-  //  DELETE ITEM --------------------------
-  const { mutate:deleting, isLoading: isDeleting } = api.groceryList.delete.useMutation({
-        onSuccess: () => {
-            toast.success("Item gelöscht!");
-            void router.reload();
-        },
-        onError: (e) => {
-          const errorMessage = e.data?.zodError?.fieldErrors.content;
-          if (errorMessage?.[0]) {
-            toast.error(errorMessage[0]);
-          } else {
-            toast.error("Fehler");
-          }
-        },
-      });
+  // DELETE ITEM --------------------------
+  const { mutate: deleting, isLoading: isDeleting } = api.groceryList.delete.useMutation({
+    onSuccess: () => {
+      toast.success("Item gelöscht!");
+      void router.reload();
+    },
+    onError: (e) => {
+      const errorMessage = e.data?.zodError?.fieldErrors.content;
+      if (errorMessage?.[0]) {
+        toast.error(errorMessage[0]);
+      } else {
+        toast.error("Fehler");
+      }
+    },
+  });
 
   const { mutate: creating, isLoading: isPosting } = api.groceryList.create.useMutation({
     onSuccess: () => {
@@ -70,7 +70,7 @@ const Grocerylist: NextPage = () => {
 
   const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    creating({ 
+    creating({
       name: newItemName,
       completed: false,
       usageDate: new Date().toISOString().slice(0, 10),
@@ -118,20 +118,26 @@ const Grocerylist: NextPage = () => {
         </button>
       </form>
       <ul className="w-full max-w-md">
-        {items.map(item => {
+        {items.map((item, index) => {
+          const prevItem = items[index - 1];
           const formattedDate = new Date(item.usageDate).toLocaleDateString('de-DE', { weekday: 'long', day: '2-digit', month: '2-digit' });
           const [weekday, dayMonth] = formattedDate.split(', ');
 
           return (
-            <li key={item.id} onClick={() => handleCheck(item.id)} className="rounded-lg flex items-center bg-white shadow p-4 mb-3">
-              <span className={`flex-grow w-[30%] ${item.completed ? 'text-gray-500 line-through' : 'text-black'}`}>{item.name}</span>
-              <span className={`flex-grow w-[70%] ml-2 mr-2 overflow-x-scroll ${item.completed ? 'text-gray-500 line-through' : 'text-gray-500'}`}>{item.reference} ({weekday}, {dayMonth})</span>
-              {item.completed && (
-                <button onClick={() => handleRemove(item.id)} className="mr-4">
-                  <FaTimesCircle color="red" />
-                </button>
+            <div key={item.id}>
+              {index > 0 && item.category !== prevItem?.category && (
+                <hr className="border-t border-gray-300 my-2" />
               )}
-            </li>
+              <li onClick={() => handleCheck(item.id)} className="rounded-lg flex items-center bg-white shadow p-4 mb-3">
+                <span className={`flex-grow w-[30%] ${item.completed ? 'text-gray-500 line-through' : 'text-black'}`}>{item.name}</span>
+                <span className={`flex-grow w-[70%] ml-2 mr-2 overflow-x-scroll ${item.completed ? 'text-gray-500 line-through' : 'text-gray-500'}`}>{item.reference} ({weekday}, {dayMonth})</span>
+                {item.completed && (
+                  <button onClick={() => handleRemove(item.id)} className="mr-4">
+                    <FaTimesCircle color="red" />
+                  </button>
+                )}
+              </li>
+            </div>
           );
         })}
       </ul>

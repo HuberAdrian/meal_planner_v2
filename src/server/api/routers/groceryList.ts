@@ -6,40 +6,43 @@ export const groceryRouter = createTRPCRouter({
     return ctx.prisma.itemGroceryList.findMany();
   }),
 
-  getAllOpen: publicProcedure.query(async ({ ctx }) => {
-    // Define the order of categories
-    const categoryOrder = [
-      "Obst & Gemüse",
-      "Frühstück",
-      "Snacks",
-      "Teigwaren",
-      "Backen",
-      "Milchprodukte",
-      "Kühlfach",
-      "Sonstiges",
-      "Haushalt"
-    ];
-
-    const items = await ctx.prisma.itemGroceryList.findMany({
-      where: {
-        completed: false,
-      },
-    });
-
-    // Sort items by category order and then alphabetically by name within each category
-    items.sort((a, b) => {
-      const categoryAIndex = categoryOrder.indexOf(a.category);
-      const categoryBIndex = categoryOrder.indexOf(b.category);
-
-      if (categoryAIndex !== categoryBIndex) {
-        return categoryAIndex - categoryBIndex;
-      }
-
-      return a.name.localeCompare(b.name);
-    });
-
-    return items;
-  }),
+    getAllOpen: publicProcedure.query(async ({ ctx }) => {
+      // Define the order of categories
+      const categoryOrder = [
+        "Obst & Gemüse",
+        "Frühstück",
+        "Snacks",
+        "Teigwaren",
+        "Backen",
+        "Milchprodukte",
+        "Kühlfach",
+        "Sonstiges",
+        "Haushalt"
+      ];
+  
+      const items = await ctx.prisma.itemGroceryList.findMany({
+        where: {
+          completed: false,
+        },
+        orderBy: {
+          category: 'asc', // Ensure items are ordered by category
+        },
+      });
+  
+      // Sort items by category order and then alphabetically by name within each category
+      items.sort((a, b) => {
+        const categoryAIndex = categoryOrder.indexOf(a.category);
+        const categoryBIndex = categoryOrder.indexOf(b.category);
+  
+        if (categoryAIndex !== categoryBIndex) {
+          return categoryAIndex - categoryBIndex;
+        }
+  
+        return a.name.localeCompare(b.name);
+      });
+  
+      return items;
+    }),
 
   create: publicProcedure
     .input(
