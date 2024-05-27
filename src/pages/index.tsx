@@ -1,4 +1,4 @@
-import { SignInButton, useUser} from "@clerk/nextjs";
+import { SignInButton, useUser } from "@clerk/nextjs";
 import Head from "next/head";
 import BottomNavBar from "~/components/BottomNavBar";
 import { Error, Loading } from "~/components/loading";
@@ -26,6 +26,8 @@ type GroupedPosts = Record<string, Post[]>;
 type DayProps = {
   date: string;
   posts: Post[];
+  expandedPostId: string | null;
+  setExpandedPostId: (id: string | null) => void;
 };
 
 type TimeOptionsKeys = "Morgens" | "Mittags" | "Abends";
@@ -65,6 +67,7 @@ export default function Home() {
   const [dates, setDates] = useState(generateNextTwoWeeks());
   const [view, setView] = useState<'infinite' | 'monthly'>('infinite');
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [expandedPostId, setExpandedPostId] = useState<string | null>(null);
 
   const { data, isLoading, refetch } = api.post.getAllExceptPast.useQuery();
   const { refetch: refetchGroceryList } = api.groceryList.getAllOpen.useQuery();
@@ -148,7 +151,12 @@ export default function Home() {
               {dates.map((date, index) => (
                 <div key={index} >
                   <hr className="border-t border-gray-300 mt-4 mb-2 mx-4" />
-                  <Day date={date} posts={groupedPosts[date] ?? []} />
+                  <Day 
+                    date={date} 
+                    posts={groupedPosts[date] ?? []}
+                    expandedPostId={expandedPostId}
+                    setExpandedPostId={setExpandedPostId}
+                  />
                 </div>
               ))}
             </ul>
@@ -158,6 +166,8 @@ export default function Home() {
               selectedDate={selectedDate}
               setSelectedDate={setSelectedDate} 
               groupedPosts={groupedPosts}
+              expandedPostId={expandedPostId}
+              setExpandedPostId={setExpandedPostId}
             />
           )}
           {view === 'infinite' && <div ref={infiniteRef}>Laden...</div>}
@@ -169,7 +179,7 @@ export default function Home() {
   );
 }
 
-const Day: React.FC<DayProps> = ({ date, posts }) => {
+const Day: React.FC<DayProps> = ({ date, posts, expandedPostId, setExpandedPostId }) => {
   const router = useRouter();
 
   const formattedDate = new Date(date).toLocaleDateString('de-DE', { weekday: 'long', day: '2-digit', month: '2-digit' });
@@ -194,6 +204,10 @@ const Day: React.FC<DayProps> = ({ date, posts }) => {
     mutate({ id });
   };
 
+  const toggleExpand = (id: string) => {
+    setExpandedPostId(expandedPostId === id ? null : id);
+  };
+
   return (
     <div className="flex flex-col items-center px-4">
       <div className="flex items-center justify-between w-full">
@@ -201,8 +215,7 @@ const Day: React.FC<DayProps> = ({ date, posts }) => {
         <h2 className="text-2xl font-bold self-start">{`${dayMonth}`}</h2>
       </div>
       {posts.map((post, index) => {
-        const [isExpanded, setIsExpanded] = useState(false);
-        const toggleExpand = () => setIsExpanded(!isExpanded);
+        const isExpanded = expandedPostId === post.id;
 
         let formattedTime = post.eventDate.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
 
@@ -214,7 +227,7 @@ const Day: React.FC<DayProps> = ({ date, posts }) => {
           <div key={index} className="flex items-start rounded-lg justify-between w-full my-1 border p-3">
             <div className="text-lg text-primary-100 font-bold self-center transform -rotate-90 flex-shrink-0 mr-2 -ml-3 ">{formattedTime}</div>
             <img src={post.eventType === "meal" ? "/meal_default.png" : "/event_default.png"} alt="Post" className="w-12 h-12 bg-white flex-shrink-0 mr-3 -ml-2 " />
-            <div className="flex flex-col flex-grow overflow-x-scroll cursor-pointer" onClick={toggleExpand}>
+            <div className="flex flex-col flex-grow overflow-x-scroll cursor-pointer" onClick={() => toggleExpand(post.id)}>
               <h2 className="text-xl font-bold">{post.topic}</h2>
               <p className="text-sm text-gray-500">
                 {isExpanded ? post.content : `${post.content.slice(0, 50)}${post.content.length > 50 ? '...' : ''}`}
@@ -241,7 +254,7 @@ const Day: React.FC<DayProps> = ({ date, posts }) => {
 
 // ----------------- Monthly View -----------------
 
-const MonthlyView: React.FC<{ posts: Post[], selectedDate: string | null, setSelectedDate: (date: string | null) => void, groupedPosts: GroupedPosts }> = ({ posts, selectedDate, setSelectedDate, groupedPosts }) => {
+const MonthlyView: React.FC<{ posts: Post[], selectedDate: string | null, setSelectedDate: (date: string | null) => void, groupedPosts: GroupedPosts, expandedPostId: string | null, setExpandedPostId: (id: string | null) => void }> = ({ posts, selectedDate, setSelectedDate, groupedPosts, expandedPostId, setExpandedPostId }) => {
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
 
@@ -307,7 +320,12 @@ const MonthlyView: React.FC<{ posts: Post[], selectedDate: string | null, setSel
       </div>
       {selectedDate && (
         <div className="mt-4">
-          <Day date={selectedDate} posts={groupedPosts[selectedDate] ?? []} />
+          <Day 
+            date={selectedDate} 
+            posts={groupedPosts[selectedDate] ?? []} 
+            expandedPostId={expandedPostId}
+            setExpandedPostId={setExpandedPostId}
+          />
         </div>
       )}
     </div>
