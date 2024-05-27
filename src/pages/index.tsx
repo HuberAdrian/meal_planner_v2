@@ -9,6 +9,7 @@ import { useRouter } from 'next/router';
 import useInfiniteScroll from 'react-infinite-scroll-hook';
 import toast from "react-hot-toast";
 import { GoArrowSwitch } from "react-icons/go";
+import { LuRefreshCw } from "react-icons/lu";
 
 type Post = {
   id: string;
@@ -65,8 +66,16 @@ export default function Home() {
   const [view, setView] = useState<'infinite' | 'monthly'>('infinite');
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
-  const { data, isLoading } = api.post.getAllExceptPast.useQuery();
+  const { data, isLoading, refetch } = api.post.getAllExceptPast.useQuery();
+  const { refetch: refetchGroceryList } = api.groceryList.getAllOpen.useQuery();
   const user = useUser();
+
+
+  const refreshData = () => {
+    refetch();
+    refetchGroceryList();
+    toast.success("Data refreshed!");
+  };
 
   // ------------------ INFINITE SCROLL ------------------
   const loadMore = () => {
@@ -117,8 +126,9 @@ export default function Home() {
         <div className=" w-full sm:max-w-md mx-auto rounded-xl overflow-y-scroll overflow-x-hidden">
         <div className="sticky top-0 z-10 flex justify-between items-center bg-primary-400 py-4 px-2">
           <h2 className="text-4xl">Kalender</h2>
+          <div className="flex items-center">
             <button
-              className="p-2 bg-blue-500 text-white rounded"
+              className="p-2 bg-blue-500 text-white rounded mr-2"
               onClick={() => {
                 setView(view === 'infinite' ? 'monthly' : 'infinite');
                 setSelectedDate(null);
@@ -126,6 +136,13 @@ export default function Home() {
             >
               <GoArrowSwitch className="text-2xl" />
             </button>
+            <button
+              className="p-2 bg-blue-500 text-white rounded"
+              onClick={refreshData}
+            >
+              <LuRefreshCw className="text-2xl" />
+            </button>
+      </div>
     </div>
           {view === 'infinite' ? (
             <ul className="px-2 py-2">

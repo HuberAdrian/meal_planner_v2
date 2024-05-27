@@ -7,6 +7,7 @@ import { api } from "~/utils/api";
 import { useRouter } from 'next/router';
 import { toast } from 'react-hot-toast';
 import { Loading } from '~/components/loading';
+import { LuRefreshCw } from "react-icons/lu"; // Import the refresh icon
 
 type ItemGroceryList = {
   id: string;
@@ -24,7 +25,7 @@ const Grocerylist: NextPage = () => {
   const router = useRouter();
   const [isAnyItemCompleted, setIsAnyItemCompleted] = useState(false);
 
-  const { data, isLoading } = api.groceryList.getAllOpen.useQuery();
+  const { data, isLoading, refetch } = api.groceryList.getAllOpen.useQuery();
 
   useEffect(() => {
     if (data) {
@@ -96,11 +97,24 @@ const Grocerylist: NextPage = () => {
     });
   };
 
+  const refreshData = () => {
+    refetch();
+    toast.success("Data refreshed!");
+  };
+
   if (isLoading || isPosting) return <Loading />;
 
   return (
     <div className="flex flex-col items-center p-4 pt-4 min-h-screen bg-primary-400">
-      <h1 className="text-3xl font-bold mb-4 text-white">Grocery List</h1>
+      <div className="sticky top-0 z-10 flex justify-between items-center bg-primary-400 py-4 px-2 w-full max-w-md">
+        <h1 className="text-3xl font-bold text-white">Grocery List</h1>
+        <button
+          className="p-2 bg-blue-500 text-white rounded"
+          onClick={refreshData}
+        >
+          <LuRefreshCw className="text-2xl" />
+        </button>
+      </div>
       <form onSubmit={onSubmit} className="flex items-center mb-4 w-full max-w-md my-4">
         <input
           type="text"
