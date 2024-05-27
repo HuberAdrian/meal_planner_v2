@@ -70,10 +70,9 @@ export default function Home() {
   const { refetch: refetchGroceryList } = api.groceryList.getAllOpen.useQuery();
   const user = useUser();
 
-
   const refreshData = () => {
-    refetch();
-    refetchGroceryList();
+    void refetch();
+    void refetchGroceryList();
     toast.success("Data refreshed!");
   };
 
@@ -124,26 +123,26 @@ export default function Home() {
       </Head>
       <main className="flex flex-col sm:flex-row min-h-screen items-center bg-primary-400 p-4">
         <div className=" w-full sm:max-w-md mx-auto rounded-xl overflow-y-scroll overflow-x-hidden">
-        <div className="sticky top-0 z-10 flex justify-between items-center bg-primary-400 py-4 px-2">
-          <h2 className="text-4xl">Kalender</h2>
-          <div className="flex items-center">
-            <button
-              className="p-2 bg-blue-500 text-white rounded mr-2"
-              onClick={() => {
-                setView(view === 'infinite' ? 'monthly' : 'infinite');
-                setSelectedDate(null);
-              }}
-            >
-              <GoArrowSwitch className="text-2xl" />
-            </button>
-            <button
-              className="p-2 bg-blue-500 text-white rounded"
-              onClick={refreshData}
-            >
-              <LuRefreshCw className="text-2xl" />
-            </button>
-      </div>
-    </div>
+          <div className="sticky top-0 z-10 flex justify-between items-center bg-primary-400 py-4 px-2">
+            <h2 className="text-4xl">Kalender</h2>
+            <div className="flex items-center">
+              <button
+                className="p-2 bg-blue-500 text-white rounded mr-2"
+                onClick={() => {
+                  setView(view === 'infinite' ? 'monthly' : 'infinite');
+                  setSelectedDate(null);
+                }}
+              >
+                <GoArrowSwitch className="text-2xl" />
+              </button>
+              <button
+                className="p-2 bg-blue-500 text-white rounded"
+                onClick={refreshData}
+              >
+                <LuRefreshCw className="text-2xl" />
+              </button>
+            </div>
+          </div>
           {view === 'infinite' ? (
             <ul className="px-2 py-2">
               {dates.map((date, index) => (
@@ -176,10 +175,10 @@ const Day: React.FC<DayProps> = ({ date, posts }) => {
   const formattedDate = new Date(date).toLocaleDateString('de-DE', { weekday: 'long', day: '2-digit', month: '2-digit' });
   const [weekday, dayMonth] = formattedDate.split(', ');
 
-  const { mutate, isLoading: isPosting } = api.post.delete.useMutation({
+  const { mutate } = api.post.delete.useMutation({
     onSuccess: () => {
       toast.success("Gelöscht!");
-      router.reload();
+      void router.reload();
     },
     onError: (e) => {
       const errorMessage = e.data?.zodError?.fieldErrors.content;
@@ -231,7 +230,7 @@ const Day: React.FC<DayProps> = ({ date, posts }) => {
       })}
       <button
         className="w-10 h-10 border text-white flex rounded-full items-center justify-center mt-4"
-        onClick={() => { void (async () => { await router.push(`/addevent/${date}`) })(); }}
+        onClick={() => { void router.push(`/addevent/${date}`); }}
       >
         <FiPlus className="items-center justify-center" />
       </button>
@@ -302,7 +301,7 @@ const MonthlyView: React.FC<{ posts: Post[], selectedDate: string | null, setSel
               {postsForDay.length > 0 && (
                 <div className={`w-2 h-2 rounded-full mx-auto mt-1 ${postsForDay.some(post => post.topic === '9e4io1e') ? 'bg-red-500' : 'bg-white'}`}></div>
               )}
-              </div>
+            </div>
           );
         })}
       </div>

@@ -71,7 +71,7 @@ const Grocerylist: NextPage = () => {
 
   const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    creating({
+    void creating({
       name: newItemName,
       completed: false,
       usageDate: new Date().toISOString().slice(0, 10),
@@ -82,7 +82,7 @@ const Grocerylist: NextPage = () => {
   };
 
   const handleRemove = (id: string) => {
-    deleting({ id });
+    void deleting({ id });
     toast.success("Essen gelöscht!");
   };
 
@@ -93,12 +93,12 @@ const Grocerylist: NextPage = () => {
   const handleDeleteAll = () => {
     const completedItems = items.filter(item => item.completed);
     completedItems.forEach(item => {
-      handleRemove(item.id);
+      void handleRemove(item.id);
     });
   };
 
   const refreshData = () => {
-    refetch();
+    void refetch();
     toast.success("Data refreshed!");
   };
 
