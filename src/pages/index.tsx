@@ -185,18 +185,24 @@ const Day: React.FC<DayProps> = ({ date, posts }) => {
         <h2 className="text-2xl font-bold self-start">{`${dayMonth}`}</h2>
       </div>
       {posts.map((post, index) => {
+        const [isExpanded, setIsExpanded] = useState(false);
+        const toggleExpand = () => setIsExpanded(!isExpanded);
+
         let formattedTime = post.eventDate.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
 
         if (post.eventType === "meal") {
           formattedTime = (Object.keys(timeOptions) as TimeOptionsKeys[]).find(key => timeOptions[key] === formattedTime) ?? formattedTime;
         }
+
         return (
           <div key={index} className="flex items-start rounded-lg justify-between w-full my-1 border p-3">
             <div className="text-lg text-primary-100 font-bold self-center transform -rotate-90 flex-shrink-0 mr-2 -ml-3 ">{formattedTime}</div>
             <img src={post.eventType === "meal" ? "/meal_default.png" : "/event_default.png"} alt="Post" className="w-12 h-12 bg-white flex-shrink-0 mr-3 -ml-2 " />
-            <div className="flex flex-col flex-grow overflow-x-scroll">
+            <div className="flex flex-col flex-grow overflow-x-scroll cursor-pointer" onClick={toggleExpand}>
               <h2 className="text-xl font-bold">{post.topic}</h2>
-              <p className="text-sm text-gray-500">{post.content}</p>
+              <p className="text-sm text-gray-500">
+                {isExpanded ? post.content : `${post.content.slice(0, 50)}${post.content.length > 50 ? '...' : ''}`}
+              </p>
             </div>
             <button className="pl-2 pr-0 py-2 text-white rounded self-start sm:self-auto flex-shrink-0"
               onClick={handleDelete(post.id)}

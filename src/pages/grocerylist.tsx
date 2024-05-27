@@ -99,7 +99,7 @@ const Grocerylist: NextPage = () => {
   if (isLoading || isPosting) return <Loading />;
 
   return (
-    <div className="flex flex-col items-center p-4 pt-14 min-h-screen bg-primary-400">
+    <div className="flex flex-col items-center p-4 pt-4 min-h-screen bg-primary-400">
       <h1 className="text-3xl font-bold mb-4 text-white">Grocery List</h1>
       <form onSubmit={onSubmit} className="flex items-center mb-4 w-full max-w-md my-4">
         <input
