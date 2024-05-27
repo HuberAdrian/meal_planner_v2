@@ -98,20 +98,20 @@ const AddEvent: NextPage = () => {
 
   const handleSubmit = () => {
     console.log(type, title, description, eventTime);
-    let eventT = type
+    let eventT = type;
     if (!type) {
-      eventT = "event"
+      eventT = "event";
     }
-
+  
     const eventDate = new Date(eventTime);
-
+  
     const mutationData = {
       mealID,
       eventType: eventT,
       topic: title,
       content: "-",
       eventDate,
-      ingredients
+      ingredients, 
     };
   
     if (description) {
@@ -138,12 +138,13 @@ const AddEvent: NextPage = () => {
       )
     );
   };
-
+  
   const handleDeleteIngredient = (id: string) => {
     setIngredients(prevIngredients =>
       prevIngredients.filter(ingredient => ingredient.id !== id)
     );
   };
+  
 
   return (
     <div className="flex flex-col items-center p-4 pt-14 min-h-screen bg-primary-400">
