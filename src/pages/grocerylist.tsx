@@ -107,7 +107,7 @@ const Grocerylist: NextPage = () => {
   return (
     <div className="flex flex-col items-center p-4 pt-4 min-h-screen bg-primary-400">
       <div className="sticky top-0 z-10 flex justify-between items-center bg-primary-400 py-4 px-2 w-full max-w-md">
-        <h1 className="text-3xl font-bold text-white">Grocery List</h1>
+        <h1 className="text-3xl font-bold text-white">Einkaufsliste</h1>
         <button
           className="p-2 bg-blue-500 text-white rounded"
           onClick={refreshData}
