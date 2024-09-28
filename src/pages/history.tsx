@@ -1,10 +1,13 @@
 "use client";
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { NextPage } from "next";
 import { FaArrowLeft, FaArrowRight } from 'react-icons/fa';
 import BottomNavBar from '~/components/BottomNavBar';
+import Link from 'next/link';
 import { api } from "~/utils/api";
 import { Loading } from '~/components/loading';
+import { GoArrowSwitch } from "react-icons/go";
+
 
 type Meal = {
   id: string;
@@ -12,25 +15,12 @@ type Meal = {
   timesEaten: number;
 };
 
-const initialMeals: Meal[] = [
-  { id: '1', name: 'Apples', timesEaten: 5 },
-  { id: '2', name: 'Bananas', timesEaten: 7 },
-  { id: '3', name: 'Oranges', timesEaten: 3 },
-  // Add more meals as needed
-];
-
 const HistoryMonth: React.FC<{date: Date}> = ({ date }) => {
-  const oneMonthLess = new Date(date.getFullYear(), date.getMonth() + 1);
-  const { data, error } = api.post.getOneMonth.useQuery({ date: oneMonthLess });
+  const { data, error, isLoading } = api.post.getOneMonth.useQuery({ date });
 
-  if (error) {
-    console.error(error);
-    return <div>Error...</div>;
-  }
-
-  if (!data) {
-    return <Loading />;
-  }
+  if (isLoading) return <Loading />;
+  if (error) return <div>Error loading data</div>;
+  if (!data || data.length === 0) return <div>No data available for this month</div>;
 
   return (
     <div className="w-full max-w-md">
@@ -61,20 +51,23 @@ const History: NextPage = () => {
   };
 
   return (
-    <div>
-      <div className="flex flex-col items-center p-4 pt-14 min-h-screen bg-primary-400">
-        <h1 className="text-3xl font-bold mb-4 text-white">Historie</h1>
-        <div className="flex justify-between items-center w-full max-w-md mb-4 border p-4 rounded-lg">
-          <button onClick={handlePreviousMonth}>
-            <FaArrowLeft />
-          </button>
-          <h2>{`${date.toLocaleString('default', { month: 'long' })} ${date.getFullYear()}`}</h2>
-          <button onClick={handleNextMonth}>
-            <FaArrowRight />
-          </button>
-        </div>
-        <HistoryMonth date={date} />
+    <div className="flex flex-col items-center p-4 min-h-screen bg-primary-400">
+      <div className="sticky top-0 z-10 flex justify-between items-center bg-primary-400 py-4 px-2 w-full max-w-md">
+        <h1 className="text-3xl font-bold text-white">Mahlzeiten Historie</h1>
+        <Link href="/expenses" className="p-2 bg-blue-500 text-white rounded">
+            <GoArrowSwitch className="text-2xl" />
+        </Link>
       </div>
+      <div className="flex justify-between items-center w-full max-w-md mb-4 border p-4 rounded-lg">
+        <button onClick={handlePreviousMonth}>
+          <FaArrowLeft />
+        </button>
+        <h2>{`${date.toLocaleString('default', { month: 'long' })} ${date.getFullYear()}`}</h2>
+        <button onClick={handleNextMonth}>
+          <FaArrowRight />
+        </button>
+      </div>
+      <HistoryMonth date={date} />
       <BottomNavBar activePage='history' />
     </div>
   );
