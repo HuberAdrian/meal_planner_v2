@@ -120,13 +120,6 @@ const sampleData: Record<string, Expense[]> = {
   ],
 };
 
-const monthlyComparisonData: MonthlyExpenses[] = [
-  { month: "Jun", miete: 830, essen: 500, sonstiges: 300 },
-  { month: "Jul", miete: 830, essen: 550, sonstiges: 400 },
-  { month: "Aug", miete: 830, essen: 520, sonstiges: 350 },
-  { month: "Sep", miete: 830, essen: 478, sonstiges: 380 },
-];
-
 const ExpenseCategory: React.FC<{expense: Expense}> = ({ expense }) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -174,46 +167,42 @@ const ExpenseChart: React.FC<{ data: MonthlyExpenses[], currentMonth: string }> 
   }, []);
 
   useEffect(() => {
-    if (!canvasRef.current || canvasWidth === 0 || canvasHeight === 0) return;
+    if (!canvasRef.current && canvasWidth === 0 && canvasHeight === 0) return;
 
     const ctx = canvasRef.current.getContext('2d');
     if (!ctx) return;
 
     const colors: [string, string, string] = ['#ffb3ba', '#bae1ff', '#baffc9'];
     const barWidth = canvasWidth / (data.length * 2);
-    const chartHeight = canvasHeight - 60; // Leave space for labels at the bottom
-    const chartTopPadding = 20; // Add padding at the top for the trend line label
+    const chartHeight = canvasHeight - 60;
+    const chartTopPadding = 20;
 
     const totalExpenses = data.map(d => d.miete + d.essen + d.sonstiges);
-    const maxExpense = Math.max(...totalExpenses);
+    const maxExpense = Math.max(...totalExpenses, 1); // Ensure maxExpense is never 0
     const averageExpense = totalExpenses.reduce((a, b) => a + b, 0) / totalExpenses.length;
 
     ctx.clearRect(0, 0, canvasWidth, canvasHeight);
 
-    // Draw bars and labels
     data.forEach((month, index) => {
       const x = index * barWidth * 2 + barWidth / 2;
       let y = chartHeight + chartTopPadding;
       const total = month.miete + month.essen + month.sonstiges;
-      const barHeight = (total / maxExpense) * (chartHeight - chartTopPadding);
+      const barHeight = total > 0 ? (total / maxExpense) * (chartHeight - chartTopPadding) : 0;
 
-      // Draw stacked bar
       [month.miete, month.essen, month.sonstiges].forEach((value, i) => {
-        const segmentHeight = (value / total) * barHeight;
+        const segmentHeight = total > 0 ? (value / total) * barHeight : 0;
         ctx.fillStyle = colors[i] ?? '#ffffff';
         ctx.fillRect(x, y - segmentHeight, barWidth, segmentHeight);
         y -= segmentHeight;
       });
 
-      // Draw month label and total expense
       ctx.fillStyle = 'white';
       ctx.font = month.month === currentMonth ? 'bold 12px Arial' : '12px Arial';
       ctx.textAlign = 'center';
       ctx.fillText(month.month, x + barWidth / 2, canvasHeight - 40);
-      ctx.fillText(Math.round(total) + '€', x + barWidth / 2, canvasHeight - 20);
+      ctx.fillText(total > 0 ? Math.round(total) + '€' : 'No data', x + barWidth / 2, canvasHeight - 20);
     });
 
-    // Draw trend line
     ctx.beginPath();
     ctx.strokeStyle = 'yellow';
     ctx.lineWidth = 2;
@@ -222,14 +211,12 @@ const ExpenseChart: React.FC<{ data: MonthlyExpenses[], currentMonth: string }> 
     ctx.lineTo(canvasWidth, trendLineY);
     ctx.stroke();
 
-    // Label for trend line
     ctx.fillStyle = 'yellow';
     ctx.font = '12px Arial';
     ctx.textAlign = 'right';
     ctx.fillText('Durchschnitt: ' + Math.round(averageExpense) + '€', canvasWidth - 10, trendLineY - 5);
 
   }, [data, canvasWidth, canvasHeight, currentMonth]);
-
 
   return (
     <div className="w-full mb-4">
@@ -238,8 +225,9 @@ const ExpenseChart: React.FC<{ data: MonthlyExpenses[], currentMonth: string }> 
   );
 };
 
-  const Expenses: NextPage = () => {
+const Expenses: NextPage = () => {
     const [date, setDate] = useState<Date>(new Date());
+    const [chartData, setChartData] = useState<MonthlyExpenses[]>([]);
   
     const handlePreviousMonth = () => {
       setDate(new Date(date.getFullYear(), date.getMonth() - 1));
@@ -249,55 +237,83 @@ const ExpenseChart: React.FC<{ data: MonthlyExpenses[], currentMonth: string }> 
       setDate(new Date(date.getFullYear(), date.getMonth() + 1));
     };
   
-    const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+    const getMonthKey = (date: Date): string => {
+      return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+    };
+  
+    const getLastFourMonths = (endDate: Date): MonthlyExpenses[] => {
+      const months: MonthlyExpenses[] = [];
+      for (let i = 3; i >= 0; i--) {
+        const monthDate = new Date(endDate.getFullYear(), endDate.getMonth() - i, 1);
+        const monthKey = getMonthKey(monthDate);
+        const expenses = sampleData[monthKey] ?? [];
+        
+        const miete = expenses.find(e => e.category === "Miete (Warm)")?.amount ?? 0;
+        const essen = expenses.find(e => e.category === "Lebensmitteleinkäufe")?.amount ?? 0;
+        const sonstiges = expenses.reduce((sum, e) => 
+          e.category !== "Miete (Warm)" && e.category !== "Lebensmitteleinkäufe" ? sum + e.amount : sum, 0);
+  
+        months.push({
+          month: monthDate.toLocaleString('default', { month: 'short' }),
+          miete,
+          essen,
+          sonstiges
+        });
+      }
+      return months;
+    };
+  
+    useEffect(() => {
+      const newChartData = getLastFourMonths(date);
+      setChartData(newChartData);
+    }, [date]);
+  
+    const monthKey = getMonthKey(date);
     const expenses = sampleData[monthKey] ?? [];
     const totalExpenses = expenses.reduce((sum, expense) => sum + expense.amount, 0);
   
     const currentMonthName = date.toLocaleString('default', { month: 'short' });
-    const chartData = monthlyComparisonData.slice(-4);
   
-    // Calculate average monthly expenses for FIRE calculator
     const averageMonthlyExpenses = chartData.reduce((sum, month) => sum + month.miete + month.essen + month.sonstiges, 0) / chartData.length;
-    const fireNumber = Math.round(averageMonthlyExpenses * 12 * 25); // 25 is the inverse of 4% withdrawal rate
+    const fireNumber = Math.round(averageMonthlyExpenses * 12 * 25);
   
-
-  return (
-    <div className="flex flex-col items-center p-4 min-h-screen bg-primary-400">
-      <div className="sticky top-0 z-10 flex justify-between items-center bg-primary-400 py-4 px-2 w-full max-w-md">
-        <h1 className="text-3xl font-bold text-white">Ausgaben Historie</h1>
-        <Link href="/history" className="p-2 bg-blue-500 text-white rounded">
+    return (
+      <div className="flex flex-col items-center p-4 min-h-screen bg-primary-400">
+        <div className="sticky top-0 z-10 flex justify-between items-center bg-primary-400 py-4 px-2 w-full max-w-md">
+          <h1 className="text-3xl font-bold text-white">Ausgaben Historie</h1>
+          <Link href="/history" className="p-2 bg-blue-500 text-white rounded">
             <GoArrowSwitch className="text-2xl" />
-        </Link>
+          </Link>
+        </div>
+        <div className="flex justify-between items-center w-full max-w-md mb-4 border p-4 rounded-lg">
+          <button onClick={handlePreviousMonth}>
+            <FaArrowLeft />
+          </button>
+          <h2>{`${date.toLocaleString('default', { month: 'long' })} ${date.getFullYear()}`}</h2>
+          <button onClick={handleNextMonth}>
+            <FaArrowRight />
+          </button>
+        </div>
+        <div className="w-full max-w-md mb-4">
+          <p className="text-xl font-bold">Gesamte Ausgaben: {totalExpenses.toFixed(2)}€</p>
+        </div>
+        <div className="w-full max-w-md mb-4">
+          {expenses.map((expense, index) => (
+            <ExpenseCategory key={index} expense={expense} />
+          ))}
+        </div>
+        <ExpenseChart data={chartData} currentMonth={currentMonthName} />
+        <div className="w-full max-w-md mt-8 mb-4">
+          <h3 className="text-xl font-bold mb-2">Lifestyle Calculator</h3>
+          <p>
+            Um diesen Lifestyle aus Anlagen zu leben, benötigt man ein Netto-Vermögen von: {fireNumber} €.
+            <br/>*bei einer inflationsbereinigten Rendite &gt; 7%
+            <br/>**bei einer Entnahme &lt; 4%
+          </p>
+        </div>
+        <BottomNavBar activePage='history' />
       </div>
-      <div className="flex justify-between items-center w-full max-w-md mb-4 border p-4 rounded-lg">
-        <button onClick={handlePreviousMonth}>
-          <FaArrowLeft />
-        </button>
-        <h2>{`${date.toLocaleString('default', { month: 'long' })} ${date.getFullYear()}`}</h2>
-        <button onClick={handleNextMonth}>
-          <FaArrowRight />
-        </button>
-      </div>
-      <div className="w-full max-w-md mb-4">
-        <p className="text-xl font-bold">Gesamte Ausgaben: {totalExpenses.toFixed(2)}€</p>
-      </div>
-      <div className="w-full max-w-md mb-4">
-        {expenses.map((expense, index) => (
-          <ExpenseCategory key={index} expense={expense} />
-        ))}
-      </div>
-      <ExpenseChart data={chartData} currentMonth={currentMonthName} />
-      <div className="w-full max-w-md mt-8 mb-4">
-        <h3 className="text-xl font-bold mb-2">Lifestyle Calculator</h3>
-        <p>
-          Um diesen Lifestyle aus Anlagen zu leben, benötigt man ein Netto-Vermögen von: {fireNumber} €.
-          <br/>*bei einer inflationsbereinigten Rendite &gt; 7%
-          <br/>**bei einer Entnahme &lt; 4%
-        </p>
-      </div>
-      <BottomNavBar activePage='history' />
-    </div>
-  );
-}
+    );
+  };
 
 export default Expenses;
