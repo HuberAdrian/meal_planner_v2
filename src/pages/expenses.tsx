@@ -1,5 +1,4 @@
-"use client";
-import { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { NextPage } from "next";
 import { FaArrowLeft, FaArrowRight } from 'react-icons/fa';
 import BottomNavBar from '~/components/BottomNavBar';
@@ -16,102 +15,117 @@ type Expense = {
   }[];
 };
 
+type MonthlyExpenses = {
+  month: string;
+  miete: number;
+  essen: number;
+  sonstiges: number;
+};
+
 const sampleData: Record<string, Expense[]> = {
   "2024-09": [
-    {
-      category: "Miete (Warm)",
-      amount: 830,
-      transactions: [
-        { date: "2024-09-01", description: "Miete September", amount: 830 }
-      ]
-    },
-    {
-      category: "Strom / Heizkosten",
-      amount: 215,
-      transactions: [
-        { date: "2024-09-15", description: "Stromrechnung", amount: 215 }
-      ]
-    },
-    {
-      category: "Lebensmitteleinkäufe",
-      amount: 478,
-      transactions: [
-        { date: "2024-09-05", description: "Supermarkt", amount: 150 },
-        { date: "2024-09-12", description: "Bioladen", amount: 80 },
-        { date: "2024-09-19", description: "Supermarkt", amount: 130 },
-        { date: "2024-09-26", description: "Wochenmarkt", amount: 118 }
-      ]
-    },
+    { category: "Miete (Warm)", amount: 830, transactions: [{ date: "2024-09-01", description: "Miete September", amount: 830 }] },
+    { category: "Strom / Heizkosten", amount: 215, transactions: [{ date: "2024-09-15", description: "Stromrechnung", amount: 215 }] },
+    { category: "Lebensmitteleinkäufe", amount: 478, transactions: [
+      { date: "2024-09-05", description: "Supermarkt", amount: 150 },
+      { date: "2024-09-12", description: "Bioladen", amount: 80 },
+      { date: "2024-09-19", description: "Supermarkt", amount: 130 },
+      { date: "2024-09-26", description: "Wochenmarkt", amount: 118 }
+    ]},
   ],
   "2024-08": [
-    {
-      category: "Miete (Warm)",
-      amount: 830,
-      transactions: [
-        { date: "2024-08-01", description: "Miete August", amount: 830 }
-      ]
-    },
-    {
-      category: "Strom / Heizkosten",
-      amount: 200,
-      transactions: [
-        { date: "2024-08-15", description: "Stromrechnung", amount: 200 }
-      ]
-    },
-    {
-      category: "Lebensmitteleinkäufe",
-      amount: 520,
-      transactions: [
-        { date: "2024-08-03", description: "Supermarkt", amount: 180 },
-        { date: "2024-08-10", description: "Bioladen", amount: 90 },
-        { date: "2024-08-17", description: "Supermarkt", amount: 140 },
-        { date: "2024-08-24", description: "Wochenmarkt", amount: 110 }
-      ]
-    },
-    {
-      category: "Freizeit",
-      amount: 150,
-      transactions: [
-        { date: "2024-08-20", description: "Kino", amount: 30 },
-        { date: "2024-08-27", description: "Restaurant", amount: 120 }
-      ]
-    },
+    { category: "Miete (Warm)", amount: 830, transactions: [{ date: "2024-08-01", description: "Miete August", amount: 830 }] },
+    { category: "Strom / Heizkosten", amount: 200, transactions: [{ date: "2024-08-15", description: "Stromrechnung", amount: 200 }] },
+    { category: "Lebensmitteleinkäufe", amount: 520, transactions: [
+      { date: "2024-08-03", description: "Supermarkt", amount: 180 },
+      { date: "2024-08-10", description: "Bioladen", amount: 90 },
+      { date: "2024-08-17", description: "Supermarkt", amount: 140 },
+      { date: "2024-08-24", description: "Wochenmarkt", amount: 110 }
+    ]},
+    { category: "Freizeit", amount: 150, transactions: [
+      { date: "2024-08-20", description: "Kino", amount: 30 },
+      { date: "2024-08-27", description: "Restaurant", amount: 120 }
+    ]},
   ],
   "2024-07": [
-    {
-      category: "Miete (Warm)",
-      amount: 830,
-      transactions: [
-        { date: "2024-07-01", description: "Miete Juli", amount: 830 }
-      ]
-    },
-    {
-      category: "Strom / Heizkosten",
-      amount: 190,
-      transactions: [
-        { date: "2024-07-15", description: "Stromrechnung", amount: 190 }
-      ]
-    },
-    {
-      category: "Lebensmitteleinkäufe",
-      amount: 550,
-      transactions: [
-        { date: "2024-07-02", description: "Supermarkt", amount: 200 },
-        { date: "2024-07-09", description: "Bioladen", amount: 100 },
-        { date: "2024-07-16", description: "Supermarkt", amount: 150 },
-        { date: "2024-07-23", description: "Wochenmarkt", amount: 100 }
-      ]
-    },
-    {
-      category: "Urlaub",
-      amount: 600,
-      transactions: [
-        { date: "2024-07-05", description: "Flugtickets", amount: 400 },
-        { date: "2024-07-20", description: "Hotel", amount: 200 }
-      ]
-    },
-  ]
+    { category: "Miete (Warm)", amount: 830, transactions: [{ date: "2024-07-01", description: "Miete Juli", amount: 830 }] },
+    { category: "Strom / Heizkosten", amount: 190, transactions: [{ date: "2024-07-15", description: "Stromrechnung", amount: 190 }] },
+    { category: "Lebensmitteleinkäufe", amount: 550, transactions: [
+      { date: "2024-07-02", description: "Supermarkt", amount: 200 },
+      { date: "2024-07-09", description: "Bioladen", amount: 100 },
+      { date: "2024-07-16", description: "Supermarkt", amount: 150 },
+      { date: "2024-07-23", description: "Wochenmarkt", amount: 100 }
+    ]},
+    { category: "Urlaub", amount: 600, transactions: [
+      { date: "2024-07-05", description: "Flugtickets", amount: 400 },
+      { date: "2024-07-20", description: "Hotel", amount: 200 }
+    ]},
+  ],
+  "2024-06": [
+    { category: "Miete (Warm)", amount: 830, transactions: [{ date: "2024-06-01", description: "Miete Juni", amount: 830 }] },
+    { category: "Strom / Heizkosten", amount: 180, transactions: [{ date: "2024-06-15", description: "Stromrechnung", amount: 180 }] },
+    { category: "Lebensmitteleinkäufe", amount: 490, transactions: [
+      { date: "2024-06-04", description: "Supermarkt", amount: 170 },
+      { date: "2024-06-11", description: "Bioladen", amount: 80 },
+      { date: "2024-06-18", description: "Supermarkt", amount: 130 },
+      { date: "2024-06-25", description: "Wochenmarkt", amount: 110 }
+    ]},
+  ],
+  "2024-05": [
+    { category: "Miete (Warm)", amount: 830, transactions: [{ date: "2024-05-01", description: "Miete Mai", amount: 830 }] },
+    { category: "Strom / Heizkosten", amount: 170, transactions: [{ date: "2024-05-15", description: "Stromrechnung", amount: 170 }] },
+    { category: "Lebensmitteleinkäufe", amount: 510, transactions: [
+      { date: "2024-05-02", description: "Supermarkt", amount: 190 },
+      { date: "2024-05-09", description: "Bioladen", amount: 85 },
+      { date: "2024-05-16", description: "Supermarkt", amount: 135 },
+      { date: "2024-05-23", description: "Wochenmarkt", amount: 100 }
+    ]},
+    { category: "Freizeit", amount: 120, transactions: [
+      { date: "2024-05-20", description: "Konzert", amount: 80 },
+      { date: "2024-05-27", description: "Restaurant", amount: 40 }
+    ]},
+  ],
+  "2024-04": [
+    { category: "Miete (Warm)", amount: 830, transactions: [{ date: "2024-04-01", description: "Miete April", amount: 830 }] },
+    { category: "Strom / Heizkosten", amount: 160, transactions: [{ date: "2024-04-15", description: "Stromrechnung", amount: 160 }] },
+    { category: "Lebensmitteleinkäufe", amount: 480, transactions: [
+      { date: "2024-04-03", description: "Supermarkt", amount: 160 },
+      { date: "2024-04-10", description: "Bioladen", amount: 90 },
+      { date: "2024-04-17", description: "Supermarkt", amount: 130 },
+      { date: "2024-04-24", description: "Wochenmarkt", amount: 100 }
+    ]},
+  ],
+  "2024-03": [
+    { category: "Miete (Warm)", amount: 830, transactions: [{ date: "2024-03-01", description: "Miete März", amount: 830 }] },
+    { category: "Strom / Heizkosten", amount: 180, transactions: [{ date: "2024-03-15", description: "Stromrechnung", amount: 180 }] },
+    { category: "Lebensmitteleinkäufe", amount: 530, transactions: [
+      { date: "2024-03-04", description: "Supermarkt", amount: 200 },
+      { date: "2024-03-11", description: "Bioladen", amount: 80 },
+      { date: "2024-03-18", description: "Supermarkt", amount: 150 },
+      { date: "2024-03-25", description: "Wochenmarkt", amount: 100 }
+    ]},
+    { category: "Urlaub", amount: 300, transactions: [
+      { date: "2024-03-20", description: "Kurztrip", amount: 300 }
+    ]},
+  ],
+  "2024-02": [
+    { category: "Miete (Warm)", amount: 830, transactions: [{ date: "2024-02-01", description: "Miete Februar", amount: 830 }] },
+    { category: "Strom / Heizkosten", amount: 200, transactions: [{ date: "2024-02-15", description: "Stromrechnung", amount: 200 }] },
+    { category: "Lebensmitteleinkäufe", amount: 470, transactions: [
+      { date: "2024-02-02", description: "Supermarkt", amount: 170 },
+      { date: "2024-02-09", description: "Bioladen", amount: 70 },
+      { date: "2024-02-16", description: "Supermarkt", amount: 130 },
+      { date: "2024-02-23", description: "Wochenmarkt", amount: 100 }
+    ]},
+  ],
 };
+
+const monthlyComparisonData: MonthlyExpenses[] = [
+  { month: "Jun", miete: 830, essen: 500, sonstiges: 300 },
+  { month: "Jul", miete: 830, essen: 550, sonstiges: 400 },
+  { month: "Aug", miete: 830, essen: 520, sonstiges: 350 },
+  { month: "Sep", miete: 830, essen: 478, sonstiges: 380 },
+];
 
 const ExpenseCategory: React.FC<{expense: Expense}> = ({ expense }) => {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -140,19 +154,112 @@ const ExpenseCategory: React.FC<{expense: Expense}> = ({ expense }) => {
   );
 }
 
-const Expenses: NextPage = () => {
-  const [date, setDate] = useState<Date>(new Date());
+const ExpenseChart: React.FC<{ data: MonthlyExpenses[], currentMonth: string }> = ({ data, currentMonth }) => {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [canvasWidth, setCanvasWidth] = useState(0);
+  const [canvasHeight, setCanvasHeight] = useState(0);
 
-  const handlePreviousMonth = () => {
-    setDate(new Date(date.getFullYear(), date.getMonth() - 1));
-  };
+  useEffect(() => {
+    const updateCanvasSize = () => {
+      if (canvasRef.current) {
+        const containerWidth = canvasRef.current.parentElement?.clientWidth || 300;
+        setCanvasWidth(containerWidth);
+        setCanvasHeight(containerWidth * 0.6);
+      }
+    };
 
-  const handleNextMonth = () => {
-    setDate(new Date(date.getFullYear(), date.getMonth() + 1));
-  };
+    updateCanvasSize();
+    window.addEventListener('resize', updateCanvasSize);
+    return () => window.removeEventListener('resize', updateCanvasSize);
+  }, []);
 
-  const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-  const expenses = sampleData[monthKey] || [];
+  useEffect(() => {
+    if (!canvasRef.current || canvasWidth === 0 || canvasHeight === 0) return;
+
+    const ctx = canvasRef.current.getContext('2d');
+    if (!ctx) return;
+
+    const colors: [string, string, string] = ['#ffb3ba', '#bae1ff', '#baffc9'];
+    const barWidth = canvasWidth / (data.length * 2);
+    const chartHeight = canvasHeight - 60; // Leave space for labels at the bottom
+    const chartTopPadding = 20; // Add padding at the top for the trend line label
+
+    const totalExpenses = data.map(d => d.miete + d.essen + d.sonstiges);
+    const maxExpense = Math.max(...totalExpenses);
+    const averageExpense = totalExpenses.reduce((a, b) => a + b, 0) / totalExpenses.length;
+
+    ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+
+    // Draw bars and labels
+    data.forEach((month, index) => {
+      const x = index * barWidth * 2 + barWidth / 2;
+      let y = chartHeight + chartTopPadding;
+      const total = month.miete + month.essen + month.sonstiges;
+      const barHeight = (total / maxExpense) * (chartHeight - chartTopPadding);
+
+      // Draw stacked bar
+      [month.miete, month.essen, month.sonstiges].forEach((value, i) => {
+        const segmentHeight = (value / total) * barHeight;
+        ctx.fillStyle = colors[i] || '#ffffff'; // Provide a fallback color
+        ctx.fillRect(x, y - segmentHeight, barWidth, segmentHeight);
+        y -= segmentHeight;
+      });
+
+      // Draw month label and total expense
+      ctx.fillStyle = 'white';
+      ctx.font = month.month === currentMonth ? 'bold 12px Arial' : '12px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText(month.month, x + barWidth / 2, canvasHeight - 40);
+      ctx.fillText(Math.round(total) + '€', x + barWidth / 2, canvasHeight - 20);
+    });
+
+    // Draw trend line
+    ctx.beginPath();
+    ctx.strokeStyle = 'yellow';
+    ctx.lineWidth = 2;
+    const trendLineY = chartHeight + chartTopPadding - (averageExpense / maxExpense) * (chartHeight - chartTopPadding);
+    ctx.moveTo(0, trendLineY);
+    ctx.lineTo(canvasWidth, trendLineY);
+    ctx.stroke();
+
+    // Label for trend line
+    ctx.fillStyle = 'yellow';
+    ctx.font = '12px Arial';
+    ctx.textAlign = 'right';
+    ctx.fillText('Durchschnitt: ' + Math.round(averageExpense) + '€', canvasWidth - 10, trendLineY - 5);
+
+  }, [data, canvasWidth, canvasHeight, currentMonth]);
+
+
+  return (
+    <div className="w-full mb-4">
+      <canvas ref={canvasRef} width={canvasWidth} height={canvasHeight} />
+    </div>
+  );
+};
+
+  const Expenses: NextPage = () => {
+    const [date, setDate] = useState<Date>(new Date());
+  
+    const handlePreviousMonth = () => {
+      setDate(new Date(date.getFullYear(), date.getMonth() - 1));
+    };
+  
+    const handleNextMonth = () => {
+      setDate(new Date(date.getFullYear(), date.getMonth() + 1));
+    };
+  
+    const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+    const expenses = sampleData[monthKey] || [];
+    const totalExpenses = expenses.reduce((sum, expense) => sum + expense.amount, 0);
+  
+    const currentMonthName = date.toLocaleString('default', { month: 'short' });
+    const chartData = monthlyComparisonData.slice(-4);
+  
+    // Calculate average monthly expenses for FIRE calculator
+    const averageMonthlyExpenses = chartData.reduce((sum, month) => sum + month.miete + month.essen + month.sonstiges, 0) / chartData.length;
+    const fireNumber = Math.round(averageMonthlyExpenses * 12 * 25); // 25 is the inverse of 4% withdrawal rate
+  
 
   return (
     <div className="flex flex-col items-center p-4 min-h-screen bg-primary-400">
@@ -171,10 +278,22 @@ const Expenses: NextPage = () => {
           <FaArrowRight />
         </button>
       </div>
-      <div className="w-full max-w-md">
+      <div className="w-full max-w-md mb-4">
+        <p className="text-xl font-bold">Gesamte Ausgaben: {totalExpenses.toFixed(2)}€</p>
+      </div>
+      <div className="w-full max-w-md mb-4">
         {expenses.map((expense, index) => (
           <ExpenseCategory key={index} expense={expense} />
         ))}
+      </div>
+      <ExpenseChart data={chartData} currentMonth={currentMonthName} />
+      <div className="w-full max-w-md mt-8 mb-4">
+        <h3 className="text-xl font-bold mb-2">Lifestyle Calculator</h3>
+        <p>
+          Um diesen Lifestyle aus Anlagen zu leben, benötigt man ein Netto-Vermögen von: {fireNumber} €.
+          <br/>*bei einer inflationsbereinigten Rendite &gt; 7%
+          <br/>**bei einer Entnahme &lt; 4%
+        </p>
       </div>
       <BottomNavBar activePage='history' />
     </div>
