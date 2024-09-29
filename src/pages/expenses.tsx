@@ -167,55 +167,54 @@ const ExpenseChart: React.FC<{ data: MonthlyExpenses[], currentMonth: string }> 
   }, []);
 
   useEffect(() => {
-    if (!canvasRef.current && canvasWidth === 0 && canvasHeight === 0) return;
-
-    const ctx = canvasRef.current.getContext('2d');
-    if (!ctx) return;
-
-    const colors: [string, string, string] = ['#ffb3ba', '#bae1ff', '#baffc9'];
-    const barWidth = canvasWidth / (data.length * 2);
-    const chartHeight = canvasHeight - 60;
-    const chartTopPadding = 20;
-
-    const totalExpenses = data.map(d => d.miete + d.essen + d.sonstiges);
-    const maxExpense = Math.max(...totalExpenses, 1); // Ensure maxExpense is never 0
-    const averageExpense = totalExpenses.reduce((a, b) => a + b, 0) / totalExpenses.length;
-
-    ctx.clearRect(0, 0, canvasWidth, canvasHeight);
-
-    data.forEach((month, index) => {
-      const x = index * barWidth * 2 + barWidth / 2;
-      let y = chartHeight + chartTopPadding;
-      const total = month.miete + month.essen + month.sonstiges;
-      const barHeight = total > 0 ? (total / maxExpense) * (chartHeight - chartTopPadding) : 0;
-
-      [month.miete, month.essen, month.sonstiges].forEach((value, i) => {
-        const segmentHeight = total > 0 ? (value / total) * barHeight : 0;
-        ctx.fillStyle = colors[i] ?? '#ffffff';
-        ctx.fillRect(x, y - segmentHeight, barWidth, segmentHeight);
-        y -= segmentHeight;
-      });
-
-      ctx.fillStyle = 'white';
-      ctx.font = month.month === currentMonth ? 'bold 12px Arial' : '12px Arial';
-      ctx.textAlign = 'center';
-      ctx.fillText(month.month, x + barWidth / 2, canvasHeight - 40);
-      ctx.fillText(total > 0 ? Math.round(total) + '€' : 'No data', x + barWidth / 2, canvasHeight - 20);
-    });
-
-    ctx.beginPath();
-    ctx.strokeStyle = 'yellow';
-    ctx.lineWidth = 2;
-    const trendLineY = chartHeight + chartTopPadding - (averageExpense / maxExpense) * (chartHeight - chartTopPadding);
-    ctx.moveTo(0, trendLineY);
-    ctx.lineTo(canvasWidth, trendLineY);
-    ctx.stroke();
-
-    ctx.fillStyle = 'yellow';
-    ctx.font = '12px Arial';
-    ctx.textAlign = 'right';
-    ctx.fillText('Durchschnitt: ' + Math.round(averageExpense) + '€', canvasWidth - 10, trendLineY - 5);
-
+    if (canvasRef.current && canvasWidth !== 0 && canvasHeight !== 0) {
+      const ctx = canvasRef.current.getContext('2d');
+      if (ctx) {
+        const colors: [string, string, string] = ['#ffb3ba', '#bae1ff', '#baffc9'];
+        const barWidth = canvasWidth / (data.length * 2);
+        const chartHeight = canvasHeight - 60;
+        const chartTopPadding = 20;
+  
+        const totalExpenses = data.map(d => d.miete + d.essen + d.sonstiges);
+        const maxExpense = Math.max(...totalExpenses, 1); // Ensure maxExpense is never 0
+        const averageExpense = totalExpenses.reduce((a, b) => a + b, 0) / totalExpenses.length;
+  
+        ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+  
+        data.forEach((month, index) => {
+          const x = index * barWidth * 2 + barWidth / 2;
+          let y = chartHeight + chartTopPadding;
+          const total = month.miete + month.essen + month.sonstiges;
+          const barHeight = total > 0 ? (total / maxExpense) * (chartHeight - chartTopPadding) : 0;
+  
+          [month.miete, month.essen, month.sonstiges].forEach((value, i) => {
+            const segmentHeight = total > 0 ? (value / total) * barHeight : 0;
+            ctx.fillStyle = colors[i] ?? '#ffffff';
+            ctx.fillRect(x, y - segmentHeight, barWidth, segmentHeight);
+            y -= segmentHeight;
+          });
+  
+          ctx.fillStyle = 'white';
+          ctx.font = month.month === currentMonth ? 'bold 12px Arial' : '12px Arial';
+          ctx.textAlign = 'center';
+          ctx.fillText(month.month, x + barWidth / 2, canvasHeight - 40);
+          ctx.fillText(total > 0 ? Math.round(total) + '€' : 'No data', x + barWidth / 2, canvasHeight - 20);
+        });
+  
+        ctx.beginPath();
+        ctx.strokeStyle = 'yellow';
+        ctx.lineWidth = 2;
+        const trendLineY = chartHeight + chartTopPadding - (averageExpense / maxExpense) * (chartHeight - chartTopPadding);
+        ctx.moveTo(0, trendLineY);
+        ctx.lineTo(canvasWidth, trendLineY);
+        ctx.stroke();
+  
+        ctx.fillStyle = 'yellow';
+        ctx.font = '12px Arial';
+        ctx.textAlign = 'right';
+        ctx.fillText('Durchschnitt: ' + Math.round(averageExpense) + '€', canvasWidth - 10, trendLineY - 5);
+      }
+    }
   }, [data, canvasWidth, canvasHeight, currentMonth]);
 
   return (
