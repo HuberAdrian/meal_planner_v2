@@ -162,7 +162,7 @@ const ExpenseChart: React.FC<{ data: MonthlyExpenses[], currentMonth: string }> 
   useEffect(() => {
     const updateCanvasSize = () => {
       if (canvasRef.current) {
-        const containerWidth = canvasRef.current.parentElement?.clientWidth || 300;
+        const containerWidth = canvasRef.current.parentElement?.clientWidth ?? 300;
         setCanvasWidth(containerWidth);
         setCanvasHeight(containerWidth * 0.6);
       }
@@ -200,7 +200,7 @@ const ExpenseChart: React.FC<{ data: MonthlyExpenses[], currentMonth: string }> 
       // Draw stacked bar
       [month.miete, month.essen, month.sonstiges].forEach((value, i) => {
         const segmentHeight = (value / total) * barHeight;
-        ctx.fillStyle = colors[i] || '#ffffff'; // Provide a fallback color
+        ctx.fillStyle = colors[i] ?? '#ffffff';
         ctx.fillRect(x, y - segmentHeight, barWidth, segmentHeight);
         y -= segmentHeight;
       });
@@ -250,7 +250,7 @@ const ExpenseChart: React.FC<{ data: MonthlyExpenses[], currentMonth: string }> 
     };
   
     const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-    const expenses = sampleData[monthKey] || [];
+    const expenses = sampleData[monthKey] ?? [];
     const totalExpenses = expenses.reduce((sum, expense) => sum + expense.amount, 0);
   
     const currentMonthName = date.toLocaleString('default', { month: 'short' });
