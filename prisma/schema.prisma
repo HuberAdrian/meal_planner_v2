@@ -63,3 +63,13 @@ model ItemGroceryList {
 
     @@index([createdAt])
 }
+
+model Expense {
+  id          String   @id @default(cuid())
+  createdAt   DateTime @default(now())
+  category    String
+  amount      Float
+  date        DateTime
+  description String
+  @@index([date])
+}
