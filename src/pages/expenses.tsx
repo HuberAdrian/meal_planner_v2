@@ -1,5 +1,5 @@
+import type { NextPage } from "next";
 import React, { useState, useEffect, useRef } from 'react';
-import { NextPage } from "next";
 import { FaArrowLeft, FaArrowRight } from 'react-icons/fa';
 import BottomNavBar from '~/components/BottomNavBar';
 import Link from 'next/link';
@@ -14,9 +14,7 @@ type Expense = {
   description: string;
 };
 
-type GroupedExpenses = {
-  [category: string]: Expense[];
-};
+type GroupedExpenses = Record<string, Expense[]>;
 
 type MonthlyExpenses = {
   month: string;
@@ -40,7 +38,7 @@ const categoryOrder = [
   "Sonstiges",
 ];
 
-const categoryColors: { [key: string]: string } = {
+const categoryColors: Record<string, string> = {
   "Miete": "#FF9999",
   "Lebensmitteleinkäufe": "#66B2FF",
   "Sonstiges": "#CCCCCC",
@@ -61,7 +59,7 @@ const groupExpensesByCategory = (expenses: Expense[]): GroupedExpenses => {
 };
 
 const calculateMonthlyExpenses = (expenses: Expense[]): MonthlyExpenses[] => {
-  const monthlyExpenses: { [key: string]: MonthlyExpenses } = {};
+  const monthlyExpenses: Record<string, MonthlyExpenses> = {};
 
   expenses.forEach((expense) => {
     const monthYear = expense.date.toLocaleString('default', { month: 'short', year: 'numeric' });
@@ -128,7 +126,7 @@ const ExpenseChart: React.FC<{ data: MonthlyExpenses[], currentMonth: string }> 
     if (canvasRef.current) {
       const ctx = canvasRef.current.getContext('2d');
       if (ctx) {
-        const dpr = window.devicePixelRatio || 1;
+        const dpr = window.devicePixelRatio ?? 1;
         const rect = canvasRef.current.getBoundingClientRect();
         canvasRef.current.width = rect.width * dpr;
         canvasRef.current.height = rect.height * dpr;
@@ -151,7 +149,7 @@ const ExpenseChart: React.FC<{ data: MonthlyExpenses[], currentMonth: string }> 
           ['Miete', 'Lebensmitteleinkäufe', 'Sonstiges'].forEach((category) => {
             const categoryAmount = month.expenses[category as keyof typeof month.expenses];
             const segmentHeight = (categoryAmount / month.total) * barHeight;
-            ctx.fillStyle = categoryColors[category as keyof typeof categoryColors] || '#CCCCCC';
+            ctx.fillStyle = categoryColors[category as keyof typeof categoryColors] ?? '#CCCCCC';
             ctx.fillRect(x, y - segmentHeight, barWidth, segmentHeight);
             y -= segmentHeight;
           });
@@ -215,7 +213,7 @@ const Expenses: NextPage = () => {
   const currentMonthExpenses = expensesData?.filter(expense => 
     new Date(expense.date).getMonth() === date.getMonth() &&
     new Date(expense.date).getFullYear() === date.getFullYear()
-  ) || [];
+  ) ?? [];
 
   const groupedExpenses = groupExpensesByCategory(currentMonthExpenses);
   const sortedCategories = Object.keys(groupedExpenses).sort((a, b) => 
