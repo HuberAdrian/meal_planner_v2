@@ -116,76 +116,76 @@ const ExpenseCategory: React.FC<{ category: string; expenses: Expense[] }> = ({ 
 };
 
 const ExpenseChart: React.FC<{ data: MonthlyExpenses[], currentMonth: string }> = ({ data, currentMonth }) => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-
-  const currentMonthIndex = data.findIndex(m => m.month === currentMonth);
-  const startIndex = Math.max(0, Math.min(currentMonthIndex - 3, data.length - 4));
-  const displayedData = data.slice(startIndex, startIndex + 4).reverse();
-
-  useEffect(() => {
-    if (canvasRef.current) {
-      const ctx = canvasRef.current.getContext('2d');
-      if (ctx) {
-        const dpr = window.devicePixelRatio ?? 1;
-        const rect = canvasRef.current.getBoundingClientRect();
-        canvasRef.current.width = rect.width * dpr;
-        canvasRef.current.height = rect.height * dpr;
-        ctx.scale(dpr, dpr);
-
-        const barWidth = rect.width / (displayedData.length * 2);
-        const chartHeight = rect.height - 60;
-        const chartTopPadding = 20;
-
-        const maxExpense = Math.max(...displayedData.map(m => m.total));
-        const averageExpense = displayedData.reduce((sum, m) => sum + m.total, 0) / displayedData.length;
-
-        ctx.clearRect(0, 0, rect.width, rect.height);
-
-        displayedData.forEach((month, index) => {
-          const x = index * barWidth * 2 + barWidth / 2;
-          let y = chartHeight + chartTopPadding;
-          const barHeight = (month.total / maxExpense) * (chartHeight - chartTopPadding);
-
-          ['Miete', 'Lebensmitteleinkäufe', 'Sonstiges'].forEach((category) => {
-            const categoryAmount = month.expenses[category as keyof typeof month.expenses];
-            const segmentHeight = (categoryAmount / month.total) * barHeight;
-            ctx.fillStyle = categoryColors[category as keyof typeof categoryColors] ?? '#CCCCCC';
-            ctx.fillRect(x, y - segmentHeight, barWidth, segmentHeight);
-            y -= segmentHeight;
+    const canvasRef = useRef<HTMLCanvasElement>(null);
+  
+    const currentMonthIndex = data.findIndex(m => m.month === currentMonth);
+    const startIndex = Math.max(0, Math.min(currentMonthIndex - 3, data.length - 4));
+    const displayedData = data.slice(startIndex, startIndex + 4).reverse();
+  
+    useEffect(() => {
+      if (canvasRef.current) {
+        const ctx = canvasRef.current.getContext('2d');
+        if (ctx) {
+          const dpr = window.devicePixelRatio ?? 1;
+          const rect = canvasRef.current.getBoundingClientRect();
+          canvasRef.current.width = rect.width * dpr;
+          canvasRef.current.height = rect.height * dpr;
+          ctx.scale(dpr, dpr);
+  
+          const barWidth = rect.width / (displayedData.length * 2);
+          const chartHeight = rect.height - 60;
+          const chartTopPadding = 20;
+  
+          const maxExpense = Math.max(...displayedData.map(m => m.total));
+          const averageExpense = displayedData.reduce((sum, m) => sum + m.total, 0) / displayedData.length;
+  
+          ctx.clearRect(0, 0, rect.width, rect.height);
+  
+          displayedData.forEach((month, index) => {
+            const x = index * barWidth * 2 + barWidth / 2;
+            let y = chartHeight + chartTopPadding;
+            const barHeight = (month.total / maxExpense) * (chartHeight - chartTopPadding);
+  
+            ['Miete', 'Lebensmitteleinkäufe', 'Sonstiges'].forEach((category) => {
+              const categoryAmount = month.expenses[category as keyof typeof month.expenses];
+              const segmentHeight = (categoryAmount / month.total) * barHeight;
+              ctx.fillStyle = categoryColors[category] ?? '#CCCCCC';
+              ctx.fillRect(x, y - segmentHeight, barWidth, segmentHeight);
+              y -= segmentHeight;
+            });
+  
+            ctx.fillStyle = 'white';
+            ctx.font = month.month === currentMonth ? 'bold 12px Arial' : '12px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText(month.month, x + barWidth / 2, rect.height - 20);
+            ctx.fillText(formatCurrency(month.total), x + barWidth / 2, rect.height - 5);
           });
-
-          ctx.fillStyle = 'white';
-          ctx.font = month.month === currentMonth ? 'bold 12px Arial' : '12px Arial';
-          ctx.textAlign = 'center';
-          ctx.fillText(month.month, x + barWidth / 2, rect.height - 20);
-          ctx.fillText(formatCurrency(month.total), x + barWidth / 2, rect.height - 5);
-        });
-
-        // Draw average line
-        ctx.beginPath();
-        ctx.strokeStyle = 'yellow';
-        ctx.lineWidth = 2;
-        const averageY = chartHeight + chartTopPadding - (averageExpense / maxExpense) * (chartHeight - chartTopPadding);
-        ctx.moveTo(0, averageY);
-        ctx.lineTo(rect.width, averageY);
-        ctx.stroke();
-
-        ctx.fillStyle = 'yellow';
-        ctx.font = '12px Arial';
-        ctx.textAlign = 'right';
-        ctx.fillText(`Durchschnitt: ${formatCurrency(averageExpense)}`, rect.width - 10, averageY - 5);
+  
+          // Draw average line
+          ctx.beginPath();
+          ctx.strokeStyle = 'yellow';
+          ctx.lineWidth = 2;
+          const averageY = chartHeight + chartTopPadding - (averageExpense / maxExpense) * (chartHeight - chartTopPadding);
+          ctx.moveTo(0, averageY);
+          ctx.lineTo(rect.width, averageY);
+          ctx.stroke();
+  
+          ctx.fillStyle = 'yellow';
+          ctx.font = '12px Arial';
+          ctx.textAlign = 'right';
+          ctx.fillText(`Durchschnitt: ${formatCurrency(averageExpense)}`, rect.width - 10, averageY - 5);
+        }
       }
-    }
-  }, [displayedData, currentMonth]);
-
-  return (
-    <div className="w-full mb-4">
-      <div style={{ height: '300px' }}>
-        <canvas ref={canvasRef} style={{ width: '100%', height: '100%' }} />
+    }, [displayedData, currentMonth]);
+  
+    return (
+      <div className="w-full mb-4">
+        <div style={{ height: '300px' }}>
+          <canvas ref={canvasRef} style={{ width: '100%', height: '100%' }} />
+        </div>
       </div>
-    </div>
-  );
-};
+    );
+  };
 
 const Expenses: NextPage = () => {
   const [date, setDate] = useState<Date>(new Date());
