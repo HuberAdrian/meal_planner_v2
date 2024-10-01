@@ -84,9 +84,9 @@ const calculateMonthlyExpenses = (expenses: Expense[]): MonthlyExpenses[] => {
     monthlyExpenses[monthYear]!.total += expense.amount;
   });
 
-  return Object.values(monthlyExpenses).sort((a, b) => 
-    new Date(b.month).getTime() - new Date(a.month).getTime()
-  );
+  return Object.entries(monthlyExpenses)
+    .sort(([a], [b]) => new Date(a).getTime() - new Date(b).getTime())
+    .map(([, value]) => value);
 };
 
 const ExpenseCategory: React.FC<{ category: string; expenses: Expense[] }> = ({ category, expenses }) => {
@@ -119,9 +119,10 @@ const ExpenseCategory: React.FC<{ category: string; expenses: Expense[] }> = ({ 
 
 const ExpenseChart: React.FC<{ data: MonthlyExpenses[], currentMonth: string }> = ({ data, currentMonth }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [startIndex, setStartIndex] = useState(0);
 
-  const displayedData = data.slice(startIndex, startIndex + 4);
+  const currentMonthIndex = data.findIndex(m => m.month === currentMonth);
+  const startIndex = Math.max(0, Math.min(currentMonthIndex - 3, data.length - 4));
+  const displayedData = data.slice(startIndex, startIndex + 4).reverse();
 
   useEffect(() => {
     if (canvasRef.current) {
@@ -181,22 +182,6 @@ const ExpenseChart: React.FC<{ data: MonthlyExpenses[], currentMonth: string }> 
 
   return (
     <div className="w-full mb-4">
-      <div className="flex justify-between mb-2">
-        <button 
-          onClick={() => setStartIndex(Math.max(0, startIndex - 1))}
-          disabled={startIndex === 0}
-          className="px-2 py-1 bg-blue-500 text-white rounded disabled:bg-gray-300"
-        >
-          <FaArrowLeft />
-        </button>
-        <button 
-          onClick={() => setStartIndex(Math.min(data.length - 4, startIndex + 1))}
-          disabled={startIndex >= data.length - 4}
-          className="px-2 py-1 bg-blue-500 text-white rounded disabled:bg-gray-300"
-        >
-          <FaArrowRight />
-        </button>
-      </div>
       <div style={{ height: '300px' }}>
         <canvas ref={canvasRef} style={{ width: '100%', height: '100%' }} />
       </div>
@@ -264,12 +249,12 @@ const Expenses: NextPage = () => {
       <div className="w-full max-w-md mb-4">
         <p className="text-xl font-bold">Gesamte Ausgaben: {formatCurrency(totalExpenses)}</p>
       </div>
+      <ExpenseChart data={chartData} currentMonth={currentMonthName} />
       <div className="w-full max-w-md mb-4">
         {sortedCategories.map((category) => (
           <ExpenseCategory key={category} category={category} expenses={groupedExpenses[category]!} />
         ))}
       </div>
-      <ExpenseChart data={chartData} currentMonth={currentMonthName} />
       <div className="w-full max-w-md mt-8 mb-4">
         <div className="border-t border-white my-4"></div>
         <h3 className="text-xl font-bold mb-2">Lifestyle Calculator</h3>
