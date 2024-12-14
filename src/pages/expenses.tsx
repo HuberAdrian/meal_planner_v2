@@ -271,3 +271,4 @@ const Expenses: NextPage = () => {
 };
 
 export default Expenses;
+
