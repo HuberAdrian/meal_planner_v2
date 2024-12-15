@@ -7,7 +7,7 @@ import { api } from "~/utils/api";
 import { useRouter } from 'next/router';
 import { toast } from 'react-hot-toast';
 import { Loading } from '~/components/loading';
-import { LuRefreshCw } from "react-icons/lu"; // Import the refresh icon
+import { LuRefreshCw } from "react-icons/lu";
 
 type ItemGroceryList = {
   id: string;
@@ -22,14 +22,45 @@ type ItemGroceryList = {
 const Grocerylist: NextPage = () => {
   const [items, setItems] = useState<ItemGroceryList[]>([]);
   const [newItemName, setNewItemName] = useState('');
-  const router = useRouter();
   const [isAnyItemCompleted, setIsAnyItemCompleted] = useState(false);
+  const [mealFilters, setMealFilters] = useState<Record<string, boolean>>({});
+  const router = useRouter();
 
   const { data, isLoading, refetch } = api.groceryList.getAllOpen.useQuery();
+
+  // Load saved filter states from localStorage
+  useEffect(() => {
+    const savedFilters = localStorage.getItem('mealFilters');
+    if (savedFilters) {
+      setMealFilters(JSON.parse(savedFilters));
+    }
+  }, []);
+
+  // Save filter states to localStorage whenever they change
+  useEffect(() => {
+    if (Object.keys(mealFilters).length > 0) {
+      localStorage.setItem('mealFilters', JSON.stringify(mealFilters));
+    }
+  }, [mealFilters]);
 
   useEffect(() => {
     if (data) {
       setItems(data);
+      
+      // Initialize meal filters if they don't exist
+      const uniqueMeals = [...new Set(data
+        .filter(item => item.reference !== 'Manuell')
+        .map(item => item.reference))];
+      
+      setMealFilters(prev => {
+        const newFilters = { ...prev };
+        uniqueMeals.forEach(meal => {
+          if (newFilters[meal] === undefined) {
+            newFilters[meal] = true; // Default to shown
+          }
+        });
+        return newFilters;
+      });
     }
   }, [data]);
 
@@ -38,7 +69,6 @@ const Grocerylist: NextPage = () => {
     setIsAnyItemCompleted(anyCompleted);
   }, [items]);
 
-  // DELETE ITEM --------------------------
   const { mutate: deleting, isLoading: isDeleting } = api.groceryList.delete.useMutation({
     onSuccess: () => {
       toast.success("Item gelöscht!");
@@ -102,7 +132,31 @@ const Grocerylist: NextPage = () => {
     toast.success("Data refreshed!");
   };
 
+  const toggleMealFilter = (meal: string) => {
+    setMealFilters(prev => ({
+      ...prev,
+      [meal]: !prev[meal]
+    }));
+  };
+
   if (isLoading || isPosting) return <Loading />;
+
+  // Filter and sort items
+  const filteredItems = items.filter(item => 
+    item.reference === 'Manuell' || mealFilters[item.reference]
+  );
+
+  const sortedItems = [...filteredItems].sort((a, b) => {
+    if (a.category !== b.category) {
+      return a.category.localeCompare(b.category);
+    }
+    return a.name.localeCompare(b.name);
+  });
+
+  // Get unique meals for filter buttons
+  const uniqueMeals = [...new Set(items
+    .filter(item => item.reference !== 'Manuell')
+    .map(item => item.reference))];
 
   return (
     <div className="flex flex-col items-center p-4 pt-4 min-h-screen bg-primary-400">
@@ -131,9 +185,29 @@ const Grocerylist: NextPage = () => {
           +
         </button>
       </form>
+
+      {/* Meal filter buttons */}
+      <div className="w-full max-w-md mb-4 overflow-x-auto">
+        <div className="flex space-x-2 pb-2">
+          {uniqueMeals.map((meal) => (
+            <button
+              key={meal}
+              onClick={() => toggleMealFilter(meal)}
+              className={`px-4 py-2 rounded-lg whitespace-nowrap ${
+                mealFilters[meal]
+                  ? 'bg-primary-100 text-white'
+                  : 'bg-gray-600 text-gray-300'
+              }`}
+            >
+              {meal}
+            </button>
+          ))}
+        </div>
+      </div>
+
       <ul className="w-full max-w-md">
-        {items.map((item, index) => {
-          const prevItem = items[index - 1];
+        {sortedItems.map((item, index) => {
+          const prevItem = sortedItems[index - 1];
           const formattedDate = new Date(item.usageDate).toLocaleDateString('de-DE', { weekday: 'long', day: '2-digit', month: '2-digit' });
           const [weekday, dayMonth] = formattedDate.split(', ');
 
