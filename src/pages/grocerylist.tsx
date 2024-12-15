@@ -20,12 +20,14 @@ type ItemGroceryList = {
 };
 
 type MealFilterState = Record<string, boolean>;
+type CompletedItemsState = Record<string, boolean>;
 
 const Grocerylist: NextPage = () => {
   const [items, setItems] = useState<ItemGroceryList[]>([]);
   const [newItemName, setNewItemName] = useState('');
   const [isAnyItemCompleted, setIsAnyItemCompleted] = useState(false);
-  const [mealFilters, setMealFilters] = useState<Record<string, boolean>>({});
+  const [mealFilters, setMealFilters] = useState<MealFilterState>({});
+  const [completedItems, setCompletedItems] = useState<CompletedItemsState>({});
   const router = useRouter();
 
   const { data, isLoading, refetch } = api.groceryList.getAllOpen.useQuery();
@@ -36,7 +38,6 @@ const Grocerylist: NextPage = () => {
     if (savedFilters) {
       try {
         const parsed = JSON.parse(savedFilters) as MealFilterState;
-        // Validate the parsed data
         if (typeof parsed === 'object' && parsed !== null) {
           const isValid = Object.entries(parsed).every(
             ([key, value]) => typeof key === 'string' && typeof value === 'boolean'
@@ -51,6 +52,26 @@ const Grocerylist: NextPage = () => {
     }
   }, []);
 
+  // Load completed items from localStorage
+  useEffect(() => {
+    const savedCompletedItems = localStorage.getItem('completedGroceryItems');
+    if (savedCompletedItems) {
+      try {
+        const parsed = JSON.parse(savedCompletedItems) as CompletedItemsState;
+        if (typeof parsed === 'object' && parsed !== null) {
+          const isValid = Object.entries(parsed).every(
+            ([key, value]) => typeof key === 'string' && typeof value === 'boolean'
+          );
+          if (isValid) {
+            setCompletedItems(parsed);
+          }
+        }
+      } catch (e) {
+        console.error('Failed to parse completed items from localStorage');
+      }
+    }
+  }, []);
+
   // Save filter states to localStorage whenever they change
   useEffect(() => {
     if (Object.keys(mealFilters).length > 0) {
@@ -60,7 +81,12 @@ const Grocerylist: NextPage = () => {
 
   useEffect(() => {
     if (data) {
-      setItems(data);
+      // Apply completed states from localStorage to the items
+      const itemsWithCompletedStates = data.map(item => ({
+        ...item,
+        completed: completedItems[item.id] || false
+      }));
+      setItems(itemsWithCompletedStates);
       
       // Initialize meal filters if they don't exist
       const uniqueMeals = [...new Set(data
@@ -77,7 +103,7 @@ const Grocerylist: NextPage = () => {
         return newFilters;
       });
     }
-  }, [data]);
+  }, [data, completedItems]);
 
   useEffect(() => {
     const anyCompleted = items.some(item => item.completed);
@@ -127,18 +153,49 @@ const Grocerylist: NextPage = () => {
   };
 
   const handleRemove = (id: string) => {
+    // Remove from localStorage
+    const newCompletedItems = { ...completedItems };
+    delete newCompletedItems[id];
+    localStorage.setItem('completedGroceryItems', JSON.stringify(newCompletedItems));
+    setCompletedItems(newCompletedItems);
+
     void deleting({ id });
     toast.success("Essen gelöscht!");
   };
 
   const handleCheck = (id: string) => {
-    setItems(items.map(item => item.id === id ? { ...item, completed: !item.completed } : item));
+    setItems(items.map(item => {
+      if (item.id === id) {
+        const newCompletedState = !item.completed;
+        // Update localStorage
+        const newCompletedItems = {
+          ...completedItems,
+          [id]: newCompletedState
+        };
+        localStorage.setItem('completedGroceryItems', JSON.stringify(newCompletedItems));
+        setCompletedItems(newCompletedItems);
+        return { ...item, completed: newCompletedState };
+      }
+      return item;
+    }));
   };
 
   const handleDeleteAll = () => {
-    const completedItems = items.filter(item => item.completed);
-    completedItems.forEach(item => {
-      void handleRemove(item.id);
+    const completedItemIds = items
+      .filter(item => item.completed)
+      .map(item => item.id);
+
+    // Remove completed items from localStorage
+    const newCompletedItems = { ...completedItems };
+    completedItemIds.forEach(id => {
+      delete newCompletedItems[id];
+    });
+    localStorage.setItem('completedGroceryItems', JSON.stringify(newCompletedItems));
+    setCompletedItems(newCompletedItems);
+
+    // Delete items from database
+    completedItemIds.forEach(id => {
+      void handleRemove(id);
     });
   };
 
