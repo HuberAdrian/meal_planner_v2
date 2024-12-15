@@ -84,7 +84,7 @@ const Grocerylist: NextPage = () => {
       // Apply completed states from localStorage to the items
       const itemsWithCompletedStates = data.map(item => ({
         ...item,
-        completed: completedItems[item.id] || false
+        completed: completedItems[item.id] ?? false
       }));
       setItems(itemsWithCompletedStates);
       
