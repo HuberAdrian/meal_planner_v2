@@ -21,6 +21,30 @@ type Post = {
   deleted: boolean;
 };
 
+type MealPopupProps = {
+  post: Post;
+  onClose: () => void;
+};
+
+const MealPopup: React.FC<MealPopupProps> = ({ post, onClose }) => {
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-primary-400 rounded-lg p-6 w-11/12 max-w-md relative">
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 text-white hover:text-gray-300"
+        >
+          <FiX className="text-2xl" />
+        </button>
+        <h2 className="text-2xl font-bold mb-4 text-white pr-8">{post.topic}</h2>
+        <div className="text-gray-300 whitespace-pre-wrap">
+          {post.content}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 type GroupedPosts = Record<string, Post[]>;
 
 type DayProps = {
@@ -28,15 +52,17 @@ type DayProps = {
   posts: Post[];
   expandedPostId: string | null;
   setExpandedPostId: (id: string | null) => void;
+  selectedMealPost: Post | null;
+  setSelectedMealPost: (post: Post | null) => void;
 };
-
-type TimeOptionsKeys = "Morgens" | "Mittags" | "Abends";
 
 const timeOptions: Record<TimeOptionsKeys, string> = {
   "Morgens": "09:00",
   "Mittags": "13:00",
   "Abends": "19:00",
 };
+
+type TimeOptionsKeys = "Morgens" | "Mittags" | "Abends";
 
 // ------------------ NOT LOGGED IN ------------------
 const LandingPage: React.FC = () => {
@@ -68,6 +94,7 @@ export default function Home() {
   const [view, setView] = useState<'infinite' | 'monthly'>('infinite');
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [expandedPostId, setExpandedPostId] = useState<string | null>(null);
+  const [selectedMealPost, setSelectedMealPost] = useState<Post | null>(null);
 
   const { data, isLoading, refetch } = api.post.getAllExceptPast.useQuery();
   const { refetch: refetchGroceryList } = api.groceryList.getAllOpen.useQuery();
@@ -156,6 +183,8 @@ export default function Home() {
                     posts={groupedPosts[date] ?? []}
                     expandedPostId={expandedPostId}
                     setExpandedPostId={setExpandedPostId}
+                    selectedMealPost={selectedMealPost}
+                    setSelectedMealPost={setSelectedMealPost}
                   />
                 </div>
               ))}
@@ -168,6 +197,8 @@ export default function Home() {
               groupedPosts={groupedPosts}
               expandedPostId={expandedPostId}
               setExpandedPostId={setExpandedPostId}
+              selectedMealPost={selectedMealPost}
+              setSelectedMealPost={setSelectedMealPost}
             />
           )}
           {view === 'infinite' && <div ref={infiniteRef}>Laden...</div>}
@@ -175,11 +206,17 @@ export default function Home() {
         <div className="h-16" />
         <BottomNavBar activePage="calendar" />
       </main>
+      {selectedMealPost && (
+        <MealPopup 
+          post={selectedMealPost} 
+          onClose={() => setSelectedMealPost(null)} 
+        />
+      )}
     </>
   );
 }
 
-const Day: React.FC<DayProps> = ({ date, posts, expandedPostId, setExpandedPostId }) => {
+const Day: React.FC<DayProps> = ({ date, posts, expandedPostId, setExpandedPostId, selectedMealPost, setSelectedMealPost }) => {
   const router = useRouter();
 
   const formattedDate = new Date(date).toLocaleDateString('de-DE', { weekday: 'long', day: '2-digit', month: '2-digit' });
@@ -204,8 +241,12 @@ const Day: React.FC<DayProps> = ({ date, posts, expandedPostId, setExpandedPostI
     mutate({ id });
   };
 
-  const toggleExpand = (id: string) => {
-    setExpandedPostId(expandedPostId === id ? null : id);
+  const handlePostClick = (post: Post) => {
+    if (post.eventType === "meal") {
+      setSelectedMealPost(post);
+    } else {
+      setExpandedPostId(expandedPostId === post.id ? null : post.id);
+    }
   };
 
   return (
@@ -225,16 +266,36 @@ const Day: React.FC<DayProps> = ({ date, posts, expandedPostId, setExpandedPostI
 
         return (
           <div key={index} className="flex items-start rounded-lg justify-between w-full my-1 border p-3">
-            <div className="text-lg text-primary-100 font-bold self-center transform -rotate-90 flex-shrink-0 mr-2 -ml-3 ">{formattedTime}</div>
-            <img src={post.eventType === "meal" ? "/meal_default.png" : "/event_default.png"} alt="Post" className="w-12 h-12 bg-white flex-shrink-0 mr-3 -ml-2 " />
-            <div className="flex flex-col flex-grow overflow-x-scroll cursor-pointer" onClick={() => toggleExpand(post.id)}>
+            <div className="text-lg text-primary-100 font-bold self-center transform -rotate-90 flex-shrink-0 mr-2 -ml-3">{formattedTime}</div>
+            <img src={post.eventType === "meal" ? "/meal_default.png" : "/event_default.png"} alt="Post" className="w-12 h-12 bg-white flex-shrink-0 mr-3 -ml-2" />
+            <div 
+              className="flex flex-col flex-grow overflow-x-scroll cursor-pointer" 
+              onClick={(e) => {
+                e.stopPropagation();
+                handlePostClick(post);
+              }}
+            >
               <h2 className="text-xl font-bold">{post.topic}</h2>
-              <p className="text-sm text-gray-500">
-                {isExpanded ? post.content : `${post.content.slice(0, 50)}${post.content.length > 50 ? '...' : ''}`}
-              </p>
+              {(!post.eventType || post.eventType !== "meal") && isExpanded && (
+                <p className="text-sm text-gray-500">{post.content}</p>
+              )}
+              {(!post.eventType || post.eventType !== "meal") && !isExpanded && (
+                <p className="text-sm text-gray-500">
+                  {`${post.content.slice(0, 50)}${post.content.length > 50 ? '...' : ''}`}
+                </p>
+              )}
+              {post.eventType === "meal" && (
+                <p className="text-sm text-gray-500">
+                  {`${post.content.slice(0, 50)}${post.content.length > 50 ? '...' : ''}`}
+                </p>
+              )}
             </div>
-            <button className="pl-2 pr-0 py-2 text-white rounded self-start sm:self-auto flex-shrink-0"
-              onClick={handleDelete(post.id)}
+            <button 
+              className="pl-2 pr-0 py-2 text-white rounded self-start sm:self-auto flex-shrink-0"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleDelete(post.id)();
+              }}
             >
               <FiX className="text-2xl" />
             </button>
@@ -251,10 +312,25 @@ const Day: React.FC<DayProps> = ({ date, posts, expandedPostId, setExpandedPostI
   );
 }
 
-
-// ----------------- Monthly View -----------------
-
-const MonthlyView: React.FC<{ posts: Post[], selectedDate: string | null, setSelectedDate: (date: string | null) => void, groupedPosts: GroupedPosts, expandedPostId: string | null, setExpandedPostId: (id: string | null) => void }> = ({ posts, selectedDate, setSelectedDate, groupedPosts, expandedPostId, setExpandedPostId }) => {
+const MonthlyView: React.FC<{ 
+  posts: Post[], 
+  selectedDate: string | null, 
+  setSelectedDate: (date: string | null) => void, 
+  groupedPosts: GroupedPosts, 
+  expandedPostId: string | null, 
+  setExpandedPostId: (id: string | null) => void,
+  selectedMealPost: Post | null,
+  setSelectedMealPost: (post: Post | null) => void
+}> = ({ 
+  posts, 
+  selectedDate, 
+  setSelectedDate, 
+  groupedPosts, 
+  expandedPostId, 
+  setExpandedPostId,
+  selectedMealPost,
+  setSelectedMealPost
+}) => {
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
 
@@ -325,6 +401,8 @@ const MonthlyView: React.FC<{ posts: Post[], selectedDate: string | null, setSel
             posts={groupedPosts[selectedDate] ?? []} 
             expandedPostId={expandedPostId}
             setExpandedPostId={setExpandedPostId}
+            selectedMealPost={selectedMealPost}
+            setSelectedMealPost={setSelectedMealPost}
           />
         </div>
       )}
