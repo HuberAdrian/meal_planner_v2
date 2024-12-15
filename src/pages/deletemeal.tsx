@@ -52,17 +52,28 @@ const categoryOptions = [
 const EditModal: React.FC<EditModalProps> = ({ meal, onClose, onSave }) => {
   const [editedMeal, setEditedMeal] = useState<Partial<Meal>>(meal);
   const [ingredientCategories, setIngredientCategories] = useState<Record<number, string>>({});
+  const [activeIngredients, setActiveIngredients] = useState<number[]>([]);
 
   useEffect(() => {
     // Initialize ingredient categories from the meal's categories array
     const categories: Record<number, string> = {};
     editedMeal.categories?.forEach(category => {
       const match = /^ingredient(\d+):(.+)$/.exec(category);
-      if (match) {
+      if (match && match[1] && match[2]) {
         categories[parseInt(match[1])] = match[2];
       }
     });
     setIngredientCategories(categories);
+
+    // Initialize active ingredients
+    const active = Array.from({ length: 15 }).reduce((acc: number[], _, index) => {
+      const ingredientKey = `ingredient${index + 1}` as keyof Meal;
+      if (editedMeal[ingredientKey]) {
+        acc.push(index);
+      }
+      return acc;
+    }, []);
+    setActiveIngredients(active);
   }, []);
 
   const handleIngredientChange = (index: number, value: string) => {
@@ -93,6 +104,39 @@ const EditModal: React.FC<EditModalProps> = ({ meal, onClose, onSave }) => {
     }));
   };
 
+  const addNewIngredient = () => {
+    const availableSlots = Array.from({ length: 15 }, (_, i) => i)
+      .filter(i => !activeIngredients.includes(i));
+  
+    if (availableSlots.length > 0) {
+      const newIndex = availableSlots[0]; // This is now definitely a number
+      if (newIndex === undefined) return;
+      setActiveIngredients((prev: number[]) => {
+        const updated = [...prev];
+        updated.push(newIndex); // Using push instead of spread to ensure number[]
+        return updated;
+      });
+      setEditedMeal(prev => ({
+        ...prev,
+        [`ingredient${newIndex + 1}`]: ''
+      }));
+    } else {
+      toast.error("Maximale Anzahl an Zutaten erreicht (15)");
+    }
+  };
+
+  const removeIngredient = (index: number) => {
+    setActiveIngredients(prev => prev.filter(i => i !== index));
+    setEditedMeal(prev => ({
+      ...prev,
+      [`ingredient${index + 1}`]: null
+    }));
+    // Remove category for this ingredient
+    const newCategories = { ...ingredientCategories };
+    delete newCategories[index];
+    setIngredientCategories(newCategories);
+  };
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-primary-400 rounded-lg p-6 w-11/12 max-w-md max-h-[90vh] overflow-y-auto">
@@ -120,12 +164,19 @@ const EditModal: React.FC<EditModalProps> = ({ meal, onClose, onSave }) => {
           </div>
 
           <div>
-            <label className="block text-white font-bold mb-2">Zutaten und Kategorien:</label>
-            {Array.from({ length: 15 }).map((_, index) => {
+            <div className="flex justify-between items-center mb-4">
+              <label className="block text-white font-bold">Zutaten und Kategorien:</label>
+              <button
+                onClick={addNewIngredient}
+                className="px-4 py-2 bg-primary-100 text-white rounded-lg"
+              >
+                + Neue Zutat
+              </button>
+            </div>
+            
+            {activeIngredients.sort((a, b) => a - b).map((index) => {
               const ingredientKey = `ingredient${index + 1}` as keyof Meal;
               const ingredientValue = editedMeal[ingredientKey] as string;
-              
-              if (!ingredientValue) return null; // Skip empty ingredients
 
               return (
                 <div key={index} className="mb-4 border border-gray-600 rounded-lg p-4">
@@ -138,6 +189,12 @@ const EditModal: React.FC<EditModalProps> = ({ meal, onClose, onSave }) => {
                       placeholder={`Zutat ${index + 1}`}
                       className="flex-1 p-2 rounded bg-white text-black"
                     />
+                    <button
+                      onClick={() => removeIngredient(index)}
+                      className="p-2 text-red-500 hover:text-red-700"
+                    >
+                      ×
+                    </button>
                   </div>
                   
                   <div>
