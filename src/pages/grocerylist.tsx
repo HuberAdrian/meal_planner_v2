@@ -19,6 +19,8 @@ type ItemGroceryList = {
   category: string;
 };
 
+type MealFilterState = Record<string, boolean>;
+
 const Grocerylist: NextPage = () => {
   const [items, setItems] = useState<ItemGroceryList[]>([]);
   const [newItemName, setNewItemName] = useState('');
@@ -32,7 +34,20 @@ const Grocerylist: NextPage = () => {
   useEffect(() => {
     const savedFilters = localStorage.getItem('mealFilters');
     if (savedFilters) {
-      setMealFilters(JSON.parse(savedFilters));
+      try {
+        const parsed = JSON.parse(savedFilters) as MealFilterState;
+        // Validate the parsed data
+        if (typeof parsed === 'object' && parsed !== null) {
+          const isValid = Object.entries(parsed).every(
+            ([key, value]) => typeof key === 'string' && typeof value === 'boolean'
+          );
+          if (isValid) {
+            setMealFilters(parsed);
+          }
+        }
+      } catch (e) {
+        console.error('Failed to parse meal filters from localStorage');
+      }
     }
   }, []);
 
