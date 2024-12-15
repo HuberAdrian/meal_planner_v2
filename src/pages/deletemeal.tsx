@@ -7,6 +7,18 @@ import { api } from "~/utils/api";
 import { useRouter } from 'next/router';
 import ToggleSwitch from '~/components/ToggleSwitch';
 
+const mealTypes = [
+  "Nudelgerichte",
+  "Kartoffelgerichte",
+  "Reisgerichte",
+  "andere Hauptgerichte",
+  "Backen",
+  "Frühstück",
+  "Snacks",
+  "Salate",
+  "Suppen",
+] as const;
+
 type Meal = {
   id: string;
   createdAt: Date;
@@ -29,6 +41,7 @@ type Meal = {
   ingredient15: string | null;
   categories: string[];
   completed: boolean;
+  type: string;
 };
 
 type EditModalProps = {
@@ -109,11 +122,11 @@ const EditModal: React.FC<EditModalProps> = ({ meal, onClose, onSave }) => {
       .filter(i => !activeIngredients.includes(i));
   
     if (availableSlots.length > 0) {
-      const newIndex = availableSlots[0]; // This is now definitely a number
+      const newIndex = availableSlots[0];
       if (newIndex === undefined) return;
       setActiveIngredients((prev: number[]) => {
         const updated = [...prev];
-        updated.push(newIndex); // Using push instead of spread to ensure number[]
+        updated.push(newIndex);
         return updated;
       });
       setEditedMeal(prev => ({
@@ -151,6 +164,19 @@ const EditModal: React.FC<EditModalProps> = ({ meal, onClose, onSave }) => {
               onChange={e => setEditedMeal(prev => ({ ...prev, name: e.target.value }))}
               className="w-full p-2 rounded bg-white text-black"
             />
+          </div>
+
+          <div>
+            <label className="block text-white font-bold mb-2">Typ:</label>
+            <select
+              value={editedMeal.type ?? 'andere Hauptgerichte'}
+              onChange={e => setEditedMeal(prev => ({ ...prev, type: e.target.value }))}
+              className="w-full p-2 rounded bg-white text-black"
+            >
+              {mealTypes.map((type) => (
+                <option key={type} value={type}>{type}</option>
+              ))}
+            </select>
           </div>
 
           <div>
@@ -244,6 +270,7 @@ const DeleteMeal: NextPage = () => {
   const router = useRouter();
   const [meals, setMeals] = useState<Meal[]>([]);
   const [editingMeal, setEditingMeal] = useState<Meal | null>(null);
+  const [activeType, setActiveType] = useState<string>("Alle");
 
   const { data, isLoading } = api.meal.getAll.useQuery();
 
@@ -304,6 +331,7 @@ const DeleteMeal: NextPage = () => {
       ingredient14: updatedMeal.ingredient14 ?? null,
       ingredient15: updatedMeal.ingredient15 ?? null,
       categories: updatedMeal.categories ?? [],
+      type: (updatedMeal.type ?? "andere Hauptgerichte") as typeof mealTypes[number],
     };
   
     updating(updateData);
@@ -322,8 +350,6 @@ const DeleteMeal: NextPage = () => {
     }
   };
 
-  
-
   useEffect(() => {
     if (data) {
       setMeals(data);
@@ -332,47 +358,95 @@ const DeleteMeal: NextPage = () => {
 
   if (isLoading) return <div>Loading...</div>;
 
-  return (
-    <div className="flex flex-col items-center p-4 min-h-screen bg-primary-400">
-      <h1 className="text-3xl font-bold mb-4 text-white">Essen Löschen</h1>
-      <ToggleSwitch onToggle={handleToggle} initialState={true} />
 
-      {meals.map((meal, index) => (
-        <div key={index} className="border p-4 rounded-lg mb-4 w-full sm:max-w-md mx-auto">
-          <h2 className="text-2xl font-bold mb-2 text-white">{meal.name}</h2>
-          {meal.description && <p className="text-gray-300 mb-2">{meal.description}</p>}
-          {[meal.ingredient1, meal.ingredient2, meal.ingredient3, meal.ingredient4, meal.ingredient5].map((ingredient, index) => (
-            ingredient && <p key={index} className="text-gray-300">{ingredient}</p>
-          ))}
-          <div className="flex gap-4 mt-4">
+
+  const filteredMeals = activeType === "Alle" 
+    ? meals 
+    : meals.filter(meal => meal.type === activeType);
+
+    if (data && data.length > 0 && data[0]) {
+      console.log("Example meal type:", data[0].type);
+      console.log("Type comparison:", {
+        mealType: data[0].type,
+        isMatch: data[0].type === "andere Hauptgerichte",
+        typeOf: typeof data[0].type,
+        length: data[0].type.length,
+        charCodes: Array.from(data[0].type).map(c => c.charCodeAt(0))
+      });
+    }
+
+    return (
+      <div className="flex flex-col items-center p-4 min-h-screen bg-primary-400">
+        <h1 className="text-3xl font-bold mb-4 text-white">Essen Löschen</h1>
+        <ToggleSwitch onToggle={handleToggle} initialState={true} />
+  
+        {/* Type filter buttons */}
+        <div className="w-full max-w-md mb-4 overflow-x-auto">
+          <div className="flex space-x-2 pb-2 overflow-x-auto whitespace-nowrap">
             <button
-              onClick={() => setEditingMeal(meal)}
-              className="flex-1 p-2 border-2 border-white text-white rounded-lg"
+              onClick={() => setActiveType("Alle")}
+              className={`px-4 py-2 rounded-lg ${
+                activeType === "Alle"
+                  ? 'bg-primary-100 text-white'
+                  : 'bg-gray-600 text-gray-300'
+              }`}
             >
-              Bearbeiten
+              Alle
             </button>
-            <button
-              onClick={() => handleDelete(meal.id)}
-              className="flex-1 p-2 bg-red-500 text-white rounded-lg"
-            >
-              Löschen
-            </button>
+            {mealTypes.map((type) => (
+              <button
+                key={type}
+                onClick={() => setActiveType(type)}
+                className={`px-4 py-2 rounded-lg ${
+                  activeType === type
+                    ? 'bg-primary-100 text-white'
+                    : 'bg-gray-600 text-gray-300'
+                }`}
+              >
+                {type}
+              </button>
+            ))}
           </div>
         </div>
-      ))}
-
-      {editingMeal && (
-        <EditModal
-          meal={editingMeal}
-          onClose={() => setEditingMeal(null)}
-          onSave={handleUpdate}
-        />
-      )}
-
-      <div className="h-16" />
-      <BottomNavBar activePage="addmeal" />
-    </div>
-  );
-};
-
-export default DeleteMeal;
+  
+        {/* Meals list */}
+        {filteredMeals.map((meal, index) => (
+          <div key={index} className="border p-4 rounded-lg mb-4 w-full sm:max-w-md mx-auto bg-primary-300">
+            <h2 className="text-2xl font-bold mb-2 text-white">{meal.name}</h2>
+            {meal.description && <p className="text-gray-300 mb-2">{meal.description}</p>}
+            <p className="text-gray-300 mb-2">Typ: {meal.type}</p>
+            {[meal.ingredient1, meal.ingredient2, meal.ingredient3, meal.ingredient4, meal.ingredient5].map((ingredient, index) => (
+              ingredient && <p key={index} className="text-gray-300">{ingredient}</p>
+            ))}
+            <div className="flex gap-4 mt-4">
+              <button
+                onClick={() => setEditingMeal(meal)}
+                className="flex-1 p-2 border-2 border-white text-white rounded-lg hover:bg-primary-100"
+              >
+                Bearbeiten
+              </button>
+              <button
+                onClick={() => handleDelete(meal.id)}
+                className="flex-1 p-2 bg-red-500 text-white rounded-lg hover:bg-red-600"
+              >
+                Löschen
+              </button>
+            </div>
+          </div>
+        ))}
+  
+        {editingMeal && (
+          <EditModal
+            meal={editingMeal}
+            onClose={() => setEditingMeal(null)}
+            onSave={handleUpdate}
+          />
+        )}
+  
+        <div className="h-16" />
+        <BottomNavBar activePage="addmeal" />
+      </div>
+    );
+  };
+  
+  export default DeleteMeal;

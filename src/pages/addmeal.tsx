@@ -1,4 +1,3 @@
-"use client";
 import { useState } from 'react';
 import BottomNavBar from '~/components/BottomNavBar';
 import { type NextPage } from "next";
@@ -7,12 +6,25 @@ import { api } from "~/utils/api";
 import { useRouter } from 'next/router';
 import ToggleSwitch from '~/components/ToggleSwitch';
 
+const mealTypes = [
+  "Nudelgerichte",
+  "Kartoffelgerichte",
+  "Reisgerichte",
+  "andere Hauptgerichte",
+  "Backen",
+  "Frühstück",
+  "Snacks",
+  "Salate",
+  "Suppen",
+] as const;
+
 const AddMeal: NextPage = () =>  {
   const router = useRouter();
   const [meal, setMeal] = useState('');
   const [description, setDescription] = useState('');
   const [ingredients, setIngredients] = useState<string[]>(Array(6).fill(''));
-  const [categories, setCategories] = useState<string[]>(Array(6).fill('')); // Add this line
+  const [categories, setCategories] = useState<string[]>(Array(6).fill('')); 
+  const [type, setType] = useState<typeof mealTypes[number]>("andere Hauptgerichte");
   const [isPlusButtonDisabled, setPlusButtonDisabled] = useState(false);
 
   const categoryOptions = [
@@ -48,19 +60,20 @@ const AddMeal: NextPage = () =>  {
       name: meal, 
       description: description,
       ingredients: ingredients,
-      categories: categories, // Add this line
+      categories: categories,
+      type: type,  // Add type to mutation
     });
   };
 
+
   const handleAddMore = () => {
     setIngredients((prevIngredients: string[]) => [...prevIngredients, ...(Array(9).fill('') as string[])]);
-    setCategories((prevCategories: string[]) => [...prevCategories, ...(Array(9).fill('') as string[])]); // Add this line
+    setCategories((prevCategories: string[]) => [...prevCategories, ...(Array(9).fill('') as string[])]);
     setPlusButtonDisabled(true);
   };
 
+
   const handleToggle = (state: boolean) => {
-    // Here you can handle the state change
-    // For example, you can redirect to the "Delete Meal" page
     if (state) {
       void router.push("/deletemeal");
     } else {
@@ -85,6 +98,24 @@ const AddMeal: NextPage = () =>  {
           <div className="mb-4">
             <label htmlFor="description" className="block text-gray-700 font-bold mb-2">Beschreibung:</label>
             <textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"/>
+          </div>
+        </div>
+
+        <div className="border p-4 rounded-lg mb-8">
+          <div className="mb-4">
+            <label htmlFor="type" className="block text-gray-700 font-bold mb-2">Typ:</label>
+            <select
+              id="type"
+              value={type}
+              onChange={(e) => setType(e.target.value as typeof mealTypes[number])}
+              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+            >
+              {mealTypes.map((type) => (
+                <option key={type} value={type}>
+                  {type}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
 

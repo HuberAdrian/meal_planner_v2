@@ -1,62 +1,59 @@
 import { z } from "zod";
-import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
+import { createTRPCRouter, publicProcedure } from "../trpc";
+
+const mealTypes = [
+  "Nudelgerichte",
+  "Kartoffelgerichte",
+  "Reisgerichte",
+  "andere Hauptgerichte",
+  "Backen",
+  "Frühstück",
+  "Snacks",
+  "Salate",
+  "Suppen",
+] as const;
 
 export const mealRouter = createTRPCRouter({
-  getAll: publicProcedure.query(({ ctx }) => {
-    return ctx.prisma.meal.findMany();
+  getAll: publicProcedure.query(async ({ ctx }) => {
+    return ctx.prisma.meal.findMany({
+      orderBy: { createdAt: "desc" },
+    });
   }),
 
   create: publicProcedure
     .input(
       z.object({
         name: z.string(),
-        description: z.string(),
+        description: z.string().optional(),
         ingredients: z.array(z.string()),
-        categories: z.array(z.string()), // Add this line
-        completed: z.boolean().optional(),
+        categories: z.array(z.string()),
+        type: z.enum(mealTypes),  // Add type validation
       })
     )
     .mutation(async ({ ctx, input }) => {
-      // Create an object to hold the ingredients
-      const ingredientsObject: Record<string, string> = {};
+      const ingredients: Record<string, string | null> = {};
       input.ingredients.forEach((ingredient, index) => {
-        if (index < 15) { // as we have only 15 ingredient fields in the database model
-          ingredientsObject[`ingredient${index + 1}`] = ingredient;
+        if (ingredient) {
+          ingredients[`ingredient${index + 1}`] = ingredient;
         }
       });
 
-      const meal = await ctx.prisma.meal.create({
+      return ctx.prisma.meal.create({
         data: {
           name: input.name,
           description: input.description,
-          ...ingredientsObject,
-          categories: input.categories, // Add this line
-          completed: input.completed ?? false,
+          categories: input.categories,
+          type: input.type,  // Add type to creation
+          ...ingredients,
         },
       });
-
-      return meal;
     }),
 
-  delete: publicProcedure
-    .input(z.object({
-      id: z.string(),
-    }))
-    .mutation(async ({ ctx, input }) => {
-      const meal = await ctx.prisma.meal.delete({
-        where: {
-          id: input.id,
-        },
-      });
-
-      return meal;
-    }),
-
-    update: publicProcedure
+  update: publicProcedure
     .input(
       z.object({
         id: z.string(),
-        name: z.string().min(1, "Name is required"),
+        name: z.string(),
         description: z.string().nullable(),
         ingredient1: z.string().nullable(),
         ingredient2: z.string().nullable(),
@@ -74,39 +71,24 @@ export const mealRouter = createTRPCRouter({
         ingredient14: z.string().nullable(),
         ingredient15: z.string().nullable(),
         categories: z.array(z.string()),
+        type: z.enum(mealTypes),  // Add type validation
       })
     )
     .mutation(async ({ ctx, input }) => {
-      try {
-        const updatedMeal = await ctx.prisma.meal.update({
-          where: {
-            id: input.id,
-          },
-          data: {
-            name: input.name,
-            description: input.description,
-            ingredient1: input.ingredient1,
-            ingredient2: input.ingredient2,
-            ingredient3: input.ingredient3,
-            ingredient4: input.ingredient4,
-            ingredient5: input.ingredient5,
-            ingredient6: input.ingredient6,
-            ingredient7: input.ingredient7,
-            ingredient8: input.ingredient8,
-            ingredient9: input.ingredient9,
-            ingredient10: input.ingredient10,
-            ingredient11: input.ingredient11,
-            ingredient12: input.ingredient12,
-            ingredient13: input.ingredient13,
-            ingredient14: input.ingredient14,
-            ingredient15: input.ingredient15,
-            categories: input.categories,
-          },
-        });
+      const { id, ...data } = input;
+      return ctx.prisma.meal.update({
+        where: { id },
+        data,
+      });
+    }),
 
-        return updatedMeal;
-      } catch (error) {
-        throw new Error("Failed to update meal");
-      }
+  delete: publicProcedure
+    .input(z.object({ id: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      return ctx.prisma.meal.delete({
+        where: { id: input.id },
+      });
     }),
 });
+
+

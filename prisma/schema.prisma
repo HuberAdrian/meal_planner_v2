@@ -1,67 +1,63 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-//used to generate the prisma client and the database schema to connect to the database
-
-datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
-  relationMode = "prisma"
-}
-
-
 generator client {
   provider = "prisma-client-js"
 }
 
-model Post {
-    id        String   @id @default(cuid())
-    createdAt DateTime @default(now())
-    eventDate DateTime
-    eventType String
-    topic     String
-    content   String
-    deleted   Boolean  @default(false)
+datasource db {
+  provider     = "postgresql"
+  url          = env("DATABASE_URL")
+  directUrl    = env("DIRECT_URL")
+  relationMode = "prisma"
+}
 
-    @@index([createdAt])
+model Post {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  eventDate DateTime
+  eventType String
+  topic     String
+  content   String
+  deleted   Boolean  @default(false)
+
+  @@index([createdAt])
 }
 
 model Meal {
-    id          String   @id @default(cuid())
-    createdAt   DateTime @default(now())
-    name        String
-    description String?
-    ingredient1 String?
-    ingredient2 String?
-    ingredient3 String?
-    ingredient4 String?
-    ingredient5 String?
-    ingredient6 String?
-    ingredient7 String?
-    ingredient8 String?
-    ingredient9 String?
-    ingredient10 String?
-    ingredient11 String?
-    ingredient12 String?
-    ingredient13 String?
-    ingredient14 String?
-    ingredient15 String?
-    categories  String[]
-    completed   Boolean  @default(false)
+  id           String   @id @default(cuid())
+  createdAt    DateTime @default(now())
+  name         String
+  description  String?
+  ingredient1  String?
+  ingredient2  String?
+  ingredient3  String?
+  ingredient4  String?
+  ingredient5  String?
+  ingredient6  String?
+  ingredient7  String?
+  ingredient8  String?
+  ingredient9  String?
+  ingredient10 String?
+  ingredient11 String?
+  ingredient12 String?
+  ingredient13 String?
+  ingredient14 String?
+  ingredient15 String?
+  completed    Boolean  @default(false)
+  categories   String[]
+  type         String   @default("\"andere Hauptgerichte\"")
 
-    @@index([createdAt])
+  @@index([createdAt])
 }
 
 model ItemGroceryList {
-    id        String   @id @default(cuid())
-    createdAt DateTime @default(now())
-    usageDate String
-    name      String
-    reference String
-    completed Boolean  @default(false)
-    category    String   @default("Other")
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  usageDate String
+  name      String
+  reference String
+  completed Boolean  @default(false)
+  category  String   @default("Other")
 
-    @@index([createdAt])
+  @@index([createdAt])
 }
 
 model Expense {
@@ -71,5 +67,6 @@ model Expense {
   amount      Float
   date        DateTime
   description String
+
   @@index([date])
 }

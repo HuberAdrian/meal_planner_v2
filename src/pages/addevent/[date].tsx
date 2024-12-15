@@ -35,7 +35,20 @@ interface Meal {
   ingredient15: string | null;
   categories: string[];
   completed: boolean;
+  type: typeof mealTypes[number];
 }
+
+const mealTypes = [
+  "Nudelgerichte",
+  "Kartoffelgerichte",
+  "Reisgerichte",
+  "andere Hauptgerichte",
+  "Backen",
+  "Frühstück",
+  "Snacks",
+  "Salate",
+  "Suppen",
+] as const;
 
 const extractIngredients = (meal: Meal): Ingredient[] => {
   const ingredients: Ingredient[] = [];
@@ -159,7 +172,7 @@ const AddEvent: NextPage = () => {
               className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
               id="meal"
               onChange={(e) => {
-                const selectedMeal = data.find(meal => meal.id === e.target.value);
+                const selectedMeal = data?.find(meal => meal.id === e.target.value) as Meal | undefined;
                 if (selectedMeal) {
                   setType("meal");
                   setTitle(selectedMeal.name);
@@ -178,11 +191,20 @@ const AddEvent: NextPage = () => {
               }}
             >
               <option value="">Select a meal</option>
-              {data.map((meal) => (
-                <option key={meal.id} value={meal.id}>
-                  {meal.name}
-                </option>
-              ))}
+              {mealTypes.map((type) => {
+                const mealsOfType = data?.filter(meal => meal.type === type) ?? [];
+                if (mealsOfType.length === 0) return null;
+                
+                return (
+                  <optgroup key={type} label={type}>
+                    {mealsOfType.map((meal) => (
+                      <option key={meal.id} value={meal.id}>
+                        {meal.name}
+                      </option>
+                    ))}
+                  </optgroup>
+                );
+              })}
             </select>
           </div>
           <div className="mb-4">
