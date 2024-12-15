@@ -67,17 +67,14 @@ const AddEvent: NextPage = () => {
   const { date } = router.query;
   const dateString = typeof date === "string" ? date : new Date().toISOString().slice(0, 10);
 
-  const [type, setType] = useState<string>(''); //for eventType
-  const [title, setTitle] = useState<string>(''); //for topic
-  const [description, setDescription] = useState<string>('');  //for content
-  const [eventTime, setEventTime] = useState<string>(`${dateString}T10:00`);  //for eventDate
-  const [mealID, setMealID] = useState<string>(''); //for mealID
+  const [type, setType] = useState<string>('');
+  const [title, setTitle] = useState<string>('');
+  const [description, setDescription] = useState<string>('');
+  const [eventTime, setEventTime] = useState<string>(`${dateString}T10:00`);
+  const [mealID, setMealID] = useState<string>('');
 
-  const [descriptionLength, setDescriptionLength] = useState<number>(0);
-  const [titleLength, setTitleLength] = useState<number>(0);
-
-  const [ingredients, setIngredients] = useState<Ingredient[]>([]); // for ingredients
-  const [showIngredients, setShowIngredients] = useState<boolean>(false); // for toggling ingredients list
+  const [ingredients, setIngredients] = useState<Ingredient[]>([]);
+  const [showIngredients, setShowIngredients] = useState<boolean>(false);
 
   const { data, isLoading } = api.meal.getAll.useQuery();
 
@@ -110,7 +107,6 @@ const AddEvent: NextPage = () => {
   };
 
   const handleSubmit = () => {
-    console.log(type, title, description, eventTime);
     let eventT = type;
     if (!type) {
       eventT = "event";
@@ -122,14 +118,10 @@ const AddEvent: NextPage = () => {
       mealID,
       eventType: eventT,
       topic: title,
-      content: "-",
+      content: description || "-",
       eventDate,
       ingredients, 
     };
-  
-    if (description) {
-      mutationData.content = description;
-    }
   
     mutate(mutationData);
   };
@@ -157,7 +149,6 @@ const AddEvent: NextPage = () => {
       prevIngredients.filter(ingredient => ingredient.id !== id)
     );
   };
-  
 
   return (
     <div className="flex flex-col items-center p-4 pt-14 min-h-screen bg-primary-400">
@@ -179,7 +170,6 @@ const AddEvent: NextPage = () => {
                   setMealID(selectedMeal.id);
                   if (selectedMeal.description) {
                     setDescription(selectedMeal.description);
-                    setDescriptionLength(selectedMeal.description.length);
                   }
                   const extractedIngredients = extractIngredients(selectedMeal);
                   setIngredients(extractedIngredients);
@@ -208,7 +198,7 @@ const AddEvent: NextPage = () => {
             </select>
           </div>
           <div className="mb-4">
-            <label className="block text-gray-700 font-bold mb-2 " htmlFor="time">
+            <label className="block text-gray-700 font-bold mb-2" htmlFor="time">
               Uhrzeit auswählen
             </label>
             <div className="flex w-full items-center justify-between">
@@ -269,21 +259,13 @@ const AddEvent: NextPage = () => {
               type="text"
               placeholder="Titel Event"
               value={title}
-              onChange={(e) => {
-                setTitle(e.target.value);
-                setTitleLength(e.target.value.length);
-              }}
+              onChange={(e) => setTitle(e.target.value)}
               required
               readOnly={type === "meal"}
             />
-            <div className="flex justify-between">
-              <p className={titleLength > 256 ? 'text-red-500' : 'text-gray-500'}>
-                {titleLength} / 256
-              </p>
-              <p className="italic text-gray-500">
-                z.B. &quot;9e4io1e&quot;
-              </p>
-            </div>
+            <p className="italic text-gray-500">
+              z.B. &quot;9e4io1e&quot;
+            </p>
           </div>
           <div className="mb-4">
             <label className="block text-gray-700 font-bold mb-2" htmlFor="description">
@@ -294,14 +276,8 @@ const AddEvent: NextPage = () => {
               id="description"
               placeholder="Beschreibung"
               value={description}
-              onChange={(e) => {
-                setDescription(e.target.value);
-                setDescriptionLength(e.target.value.length);
-              }}
+              onChange={(e) => setDescription(e.target.value)}
             />
-            <p className={descriptionLength > 256 ? 'text-red-500' : 'text-gray-500'}>
-              {descriptionLength} / 256
-            </p>
           </div>
           <div className="mb-4">
             <label className="block text-gray-700 font-bold mb-2" htmlFor="eventTime">
@@ -322,7 +298,7 @@ const AddEvent: NextPage = () => {
           <button
             className={`font-bold py-2 w-full rounded-lg focus:outline-none focus:shadow-outline ${!title || !eventTime ? 'bg-gray-500 cursor-not-allowed' : 'bg-blue-500 hover:bg-blue-700 text-white'}`} 
             onClick={handleSubmit}
-            disabled={!title || !eventTime || titleLength > 256 || descriptionLength > 256}
+            disabled={!title || !eventTime}
           >
             Speichern
           </button>

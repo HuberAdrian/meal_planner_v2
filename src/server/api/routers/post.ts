@@ -33,7 +33,6 @@ type Meal = {
   completed: boolean;
 };
 
-
 type Post = {
   id: string;
   createdAt: Date;
@@ -43,7 +42,6 @@ type Post = {
   content: string;
   deleted: boolean;
 };
-
 
 export const postRouter = createTRPCRouter({
   getAllExceptPast: publicProcedure.query(({ ctx }) => {
@@ -60,11 +58,11 @@ export const postRouter = createTRPCRouter({
   .input(
     z.object({
       mealID: z.string(),
-      topic: z.string().min(1).max(280),
-      content: z.string().min(1).max(280),
+      topic: z.string().min(1), // Removed max length restriction
+      content: z.string().min(1), // Removed max length restriction
       eventDate: z.date(),
-      eventType: z.string().min(1).max(280),
-      ingredients: z.array(z.object({ id: z.string(), name: z.string() })), // Add this line
+      eventType: z.string().min(1), // Removed max length restriction
+      ingredients: z.array(z.object({ id: z.string(), name: z.string() })),
     })
   )
   .mutation(async ({ ctx, input }) => {
@@ -95,10 +93,10 @@ export const postRouter = createTRPCRouter({
         await ctx.prisma.itemGroceryList.create({
           data: {
             usageDate: input.eventDate.toISOString(),
-            name: ingredients[i] ?? '404', // Default to 'Sonstiges' if no ingredient is provided
+            name: ingredients[i] ?? '404',
             reference: input.topic,
             completed: false,
-            category: meal.categories[i] ?? 'Sonstiges', // Default to 'Sonstiges' if no category is provided
+            category: meal.categories[i] ?? 'Sonstiges',
           },
         });
       }
@@ -106,7 +104,6 @@ export const postRouter = createTRPCRouter({
 
     return post;
   }),
-
 
   delete: publicProcedure
     .input(z.object({
@@ -149,7 +146,7 @@ export const postRouter = createTRPCRouter({
       date: z.date(),
     }))
     .query(async ({ ctx, input }) => {
-      const month = input.date.getMonth() + 1;  // JavaScript months are 0-indexed
+      const month = input.date.getMonth() + 1;
       const year = input.date.getFullYear();
 
       const posts = await ctx.prisma.post.findMany({
@@ -157,25 +154,24 @@ export const postRouter = createTRPCRouter({
           AND: [
             {
               eventDate: {
-                gte: new Date(year, month - 1, 1), // start of the month
+                gte: new Date(year, month - 1, 1),
               },
             },
             {
               eventDate: {
-                lt: new Date(month === 12 ? year + 1 : year, month === 12 ? 0 : month, 1), // start of the next month
+                lt: new Date(month === 12 ? year + 1 : year, month === 12 ? 0 : month, 1),
               },
             },
             {
-              eventType: 'meal', // filter for meals
+              eventType: 'meal',
             },
             {
-              deleted: false, // filter out deleted posts
+              deleted: false,
             },
           ],
         },
       });
 
-      // group posts by topic (meal name) and count the number of times each meal was eaten
       const meals: Record<string, MealMonth> = posts.reduce((acc, post) => {
         if (!acc[post.topic]) {
           acc[post.topic] = {
@@ -190,7 +186,7 @@ export const postRouter = createTRPCRouter({
         return acc;
       }, {} as Record<string, MealMonth>);
 
-      // convert the meals object to an array of meals
       return Object.values(meals);
     }),
 });
+
