@@ -59,7 +59,7 @@ const EditModal: React.FC<EditModalProps> = ({ meal, onClose, onSave }) => {
     const categories: Record<number, string> = {};
     editedMeal.categories?.forEach(category => {
       const match = /^ingredient(\d+):(.+)$/.exec(category);
-      if (match && match[1] && match[2]) {
+      if (match?.[1] && match?.[2]) {
         categories[parseInt(match[1])] = match[2];
       }
     });
