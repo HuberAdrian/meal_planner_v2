@@ -262,12 +262,52 @@ const DeleteMeal: NextPage = () => {
     },
   });
 
-  // TODO: Add the update mutation here after backend is implemented
+  const { mutate: updating, isLoading: isUpdating } = api.meal.update.useMutation({
+    onSuccess: () => {
+      toast.success("Mahlzeit aktualisiert!");
+      void router.reload();
+    },
+    onError: (e) => {
+      const errorMessage = e.data?.zodError?.fieldErrors.content;
+      if (errorMessage?.[0]) {
+        toast.error(errorMessage[0]);
+      } else {
+        toast.error("Fehler beim Aktualisieren");
+      }
+    },
+  });
+
   const handleUpdate = (updatedMeal: Partial<Meal>) => {
-    // Will be implemented after backend setup
-    console.log('Updating meal:', updatedMeal);
+    if (!updatedMeal.id) {
+      toast.error("Fehler: Keine Meal ID gefunden");
+      return;
+    }
+  
+    // Ensure all required fields are present and convert undefined to null
+    const updateData = {
+      id: updatedMeal.id,
+      name: updatedMeal.name ?? "",
+      description: updatedMeal.description ?? null,
+      ingredient1: updatedMeal.ingredient1 ?? null,
+      ingredient2: updatedMeal.ingredient2 ?? null,
+      ingredient3: updatedMeal.ingredient3 ?? null,
+      ingredient4: updatedMeal.ingredient4 ?? null,
+      ingredient5: updatedMeal.ingredient5 ?? null,
+      ingredient6: updatedMeal.ingredient6 ?? null,
+      ingredient7: updatedMeal.ingredient7 ?? null,
+      ingredient8: updatedMeal.ingredient8 ?? null,
+      ingredient9: updatedMeal.ingredient9 ?? null,
+      ingredient10: updatedMeal.ingredient10 ?? null,
+      ingredient11: updatedMeal.ingredient11 ?? null,
+      ingredient12: updatedMeal.ingredient12 ?? null,
+      ingredient13: updatedMeal.ingredient13 ?? null,
+      ingredient14: updatedMeal.ingredient14 ?? null,
+      ingredient15: updatedMeal.ingredient15 ?? null,
+      categories: updatedMeal.categories ?? [],
+    };
+  
+    updating(updateData);
     setEditingMeal(null);
-    // TODO: Add the actual mutation call here
   };
 
   const handleDelete = (id: string) => {
@@ -281,6 +321,8 @@ const DeleteMeal: NextPage = () => {
       void router.push("/deletemeal");
     }
   };
+
+  
 
   useEffect(() => {
     if (data) {
