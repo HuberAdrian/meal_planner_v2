@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import BottomNavBar from '~/components/BottomNavBar';
 import { type NextPage } from "next";
 import { toast } from 'react-hot-toast';
 import { api } from "~/utils/api";
 import { useRouter } from 'next/router';
 import ToggleSwitch from '~/components/ToggleSwitch';
+import BottomNavBar from '~/components/BottomNavBar';
+import { FiPlus, FiX } from 'react-icons/fi';
 
 const mealTypes = [
   "Nudelgerichte",
@@ -18,157 +19,229 @@ const mealTypes = [
   "Suppen",
 ] as const;
 
-const AddMeal: NextPage = () =>  {
+const categoryOptions = [
+  "Obst & Gemüse",
+  "Frühstück",
+  "Snacks",
+  "Teigwaren",
+  "Backen",
+  "Milchprodukte",
+  "Kühlfach",
+  "Sonstiges",
+  "Haushalt"
+];
+
+interface Ingredient {
+  name: string;
+  category: string;
+}
+
+const AddMeal: NextPage = () => {
   const router = useRouter();
-  const [meal, setMeal] = useState('');
-  const [description, setDescription] = useState('');
-  const [ingredients, setIngredients] = useState<string[]>(Array(6).fill(''));
-  const [categories, setCategories] = useState<string[]>(Array(6).fill('')); 
-  const [type, setType] = useState<typeof mealTypes[number]>("andere Hauptgerichte");
-  const [isPlusButtonDisabled, setPlusButtonDisabled] = useState(false);
+  const [mealData, setMealData] = useState({
+    name: '',
+    description: '',
+    type: 'andere Hauptgerichte' as typeof mealTypes[number],
+  });
+  const [ingredients, setIngredients] = useState<Ingredient[]>(
+    Array(6).fill(null).map(() => ({ name: '', category: '' }))
+  );
+  const [activeTab, setActiveTab] = useState<'details' | 'ingredients'>('details');
 
-  const categoryOptions = [
-    "Obst & Gemüse",
-    "Frühstück",
-    "Snacks",
-    "Teigwaren",
-    "Backen",
-    "Milchprodukte",
-    "Kühlfach",
-    "Sonstiges",
-    "Haushalt"
-  ];
-
-  const { mutate, isLoading: isPosting } = api.meal.create.useMutation({
+  const { mutate, isLoading } = api.meal.create.useMutation({
     onSuccess: () => {
-      toast.success("Meal added!");
-      void router.reload();
+      toast.success("Mahlzeit hinzugefügt!");
+      void router.push("/deletemeal");
     },
     onError: (e) => {
       const errorMessage = e.data?.zodError?.fieldErrors.content;
       if (errorMessage?.[0]) {
         toast.error(errorMessage[0]);
       } else {
-        toast.error("Failed to add meal! Please try again later.");
+        toast.error("Fehler beim Hinzufügen");
       }
     },
   });
 
-  const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    mutate({ 
-      name: meal, 
-      description: description,
-      ingredients: ingredients,
-      categories: categories,
-      type: type,  // Add type to mutation
-    });
-  };
-
-
-  const handleAddMore = () => {
-    setIngredients((prevIngredients: string[]) => [...prevIngredients, ...(Array(9).fill('') as string[])]);
-    setCategories((prevCategories: string[]) => [...prevCategories, ...(Array(9).fill('') as string[])]);
-    setPlusButtonDisabled(true);
-  };
-
-
   const handleToggle = (state: boolean) => {
     if (state) {
       void router.push("/deletemeal");
-    } else {
-      void router.push("/addmeal");
     }
   };
 
+  const addIngredient = () => {
+    if (ingredients.length < 15) {
+      setIngredients([...ingredients, { name: '', category: '' }]);
+    } else {
+      toast.error("Maximal 15 Zutaten erlaubt");
+    }
+  };
+
+  const removeIngredient = (index: number) => {
+    setIngredients(ingredients.filter((_, i) => i !== index));
+  };
+
+  const updateIngredient = (index: number, field: keyof Ingredient, value: string) => {
+    setIngredients(prevIngredients => 
+      prevIngredients.map((ing, i) => 
+        i === index 
+          ? { ...ing, [field]: value }
+          : ing
+      )
+    );
+  };
+
+  const handleSubmit = () => {
+    if (!mealData.name.trim()) {
+      toast.error("Bitte einen Namen eingeben");
+      return;
+    }
+
+    const validIngredients = ingredients
+      .filter(ing => ing.name.trim())
+      .map(ing => ing.name);
+    
+    const categories = ingredients
+      .filter(ing => ing.name.trim() && ing.category)
+      .map(ing => `ingredient${ingredients.indexOf(ing) + 1}:${ing.category}`);
+
+    mutate({
+      name: mealData.name,
+      description: mealData.description,
+      ingredients: validIngredients,
+      categories,
+      type: mealData.type
+    });
+  };
+
   return (
-    <div className="flex flex-col items-center p-4 pt-4 min-h-screen bg-primary-400">
-      <h1 className="text-3xl font-bold mb-4 text-white">Essen hinzufügen</h1>
+    <div className="flex flex-col items-center p-4 min-h-screen bg-primary-400 text-white">
+      <div className="sticky top-0 z-10 flex justify-between items-center bg-primary-400 py-4 px-2 w-full max-w-md">
+        <h1 className="text-3xl font-bold">Essen hinzufügen</h1>
+      </div>
+
       <ToggleSwitch onToggle={handleToggle} initialState={false} />
 
-      <form onSubmit={onSubmit} className="w-full sm:max-w-md mx-auto rounded-xl overflow-y-scroll overflow-x-hidden p-4">
-        <div className="border p-4 rounded-lg mb-2">
-          <div className="mb-4">
-            <label htmlFor="meal" className="block text-gray-700 font-bold mb-2">Name:</label>
-            <input id="meal" value={meal} onChange={(e) => setMeal(e.target.value)} className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"/>
-          </div>
+      <div className="w-full max-w-md mt-6">
+        {/* Tab Navigation */}
+        <div className="flex mb-6">
+          <button
+            className={`flex-1 py-2 px-4 ${activeTab === 'details' ? 'bg-primary-100 text-white' : 'bg-primary-300'} rounded-l-lg transition-colors`}
+            onClick={() => setActiveTab('details')}
+          >
+            Details
+          </button>
+          <button
+            className={`flex-1 py-2 px-4 ${activeTab === 'ingredients' ? 'bg-primary-100 text-white' : 'bg-primary-300'} rounded-r-lg transition-colors`}
+            onClick={() => setActiveTab('ingredients')}
+          >
+            Zutaten
+          </button>
         </div>
 
-        <div className="border p-4 rounded-lg mb-8">
-          <div className="mb-4">
-            <label htmlFor="description" className="block text-gray-700 font-bold mb-2">Beschreibung:</label>
-            <textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"/>
-          </div>
-        </div>
+        {/* Details Tab */}
+        {activeTab === 'details' && (
+          <div className="space-y-4">
+            <div className="bg-primary-300 p-4 rounded-lg">
+              <label className="block mb-2 font-bold">Name</label>
+              <input
+                type="text"
+                value={mealData.name}
+                onChange={(e) => setMealData({ ...mealData, name: e.target.value })}
+                className="w-full p-2 rounded bg-white text-black"
+                placeholder="Name der Mahlzeit"
+              />
+            </div>
 
-        <div className="border p-4 rounded-lg mb-8">
-          <div className="mb-4">
-            <label htmlFor="type" className="block text-gray-700 font-bold mb-2">Typ:</label>
-            <select
-              id="type"
-              value={type}
-              onChange={(e) => setType(e.target.value as typeof mealTypes[number])}
-              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-            >
-              {mealTypes.map((type) => (
-                <option key={type} value={type}>
-                  {type}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        <div className="border p-4 rounded-lg">
-          {ingredients.map((_, index) => (
-            <div key={index} className="mb-4">
-              <label htmlFor={`ingredient${index}`} className="block text-gray-700 font-bold mb-2">Zutaten für eine Portion:</label>
-              <input id={`ingredient${index}`} value={ingredients[index]} 
-                     onChange={(e) => {
-                       const newIngredients = [...ingredients];
-                       newIngredients[index] = e.target.value;
-                       setIngredients(newIngredients);
-                     }}
-                     className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"/>
-              <label htmlFor={`category${index}`} className="block text-gray-700 font-bold mb-2">Kategorie:</label>
-              <select 
-                id={`category${index}`} 
-                value={categories[index]} 
-                onChange={(e) => {
-                  const newCategories = [...categories];
-                  newCategories[index] = e.target.value;
-                  setCategories(newCategories);
-                }}
-                className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+            <div className="bg-primary-300 p-4 rounded-lg">
+              <label className="block mb-2 font-bold">Typ</label>
+              <select
+                value={mealData.type}
+                onChange={(e) => setMealData({ ...mealData, type: e.target.value as typeof mealTypes[number] })}
+                className="w-full p-2 rounded bg-white text-black"
               >
-                <option value="">Kategorie wählen</option>
-                {categoryOptions.map((option, idx) => (
-                  <option key={idx} value={option}>{option}</option>
+                {mealTypes.map((type) => (
+                  <option key={type} value={type}>{type}</option>
                 ))}
               </select>
             </div>
-          ))}
 
-          <div className="flex items-center justify-center w-full mb-4">
-            <button type='button' onClick={handleAddMore} disabled={isPlusButtonDisabled}
-                    className={`font-bold py-2 w-full rounded-lg ${isPlusButtonDisabled ? 'bg-gray-500 cursor-not-allowed' : 'bg-blue-500 hover:bg-blue-700 text-white'}`}>
-              +
-            </button>
+            <div className="bg-primary-300 p-4 rounded-lg">
+              <label className="block mb-2 font-bold">Beschreibung</label>
+              <textarea
+                value={mealData.description}
+                onChange={(e) => setMealData({ ...mealData, description: e.target.value })}
+                className="w-full p-2 rounded bg-white text-black"
+                rows={3}
+                placeholder="Optionale Beschreibung"
+              />
+            </div>
           </div>
+        )}
 
-          <div className="flex items-center justify-center w-full">
-            <button type='submit' 
-                    className={`font-bold py-2 w-full rounded-lg focus:outline-none focus:shadow-outline ${!meal ? 'bg-gray-500 cursor-not-allowed' : 'bg-blue-500 hover:bg-blue-700 text-white'}`} 
-                    disabled={!meal}>
-              Speichern
-            </button>
+        {/* Ingredients Tab */}
+        {activeTab === 'ingredients' && (
+          <div className="space-y-4">
+            {ingredients.map((ingredient, index) => (
+              <div key={index} className="bg-primary-300 p-4 rounded-lg">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="font-bold">Zutat {index + 1}</span>
+                  <button
+                    onClick={() => removeIngredient(index)}
+                    className="text-red-500 hover:text-red-700"
+                  >
+                    <FiX size={20} />
+                  </button>
+                </div>
+                <input
+                  type="text"
+                  value={ingredient.name}
+                  onChange={(e) => updateIngredient(index, 'name', e.target.value)}
+                  className="w-full p-2 rounded mb-2 bg-white text-black"
+                  placeholder="Zutat Name"
+                />
+                <select
+                  value={ingredient.category}
+                  onChange={(e) => updateIngredient(index, 'category', e.target.value)}
+                  className="w-full p-2 rounded bg-white text-black"
+                >
+                  <option value="">Kategorie wählen</option>
+                  {categoryOptions.map((category) => (
+                    <option key={category} value={category}>{category}</option>
+                  ))}
+                </select>
+              </div>
+            ))}
+
+            {ingredients.length < 15 && (
+              <button
+                onClick={addIngredient}
+                className="w-full p-3 bg-primary-100 text-white rounded-lg flex items-center justify-center gap-2"
+              >
+                <FiPlus size={20} />
+                Neue Zutat
+              </button>
+            )}
           </div>
-        </div>
-      </form>
+        )}
+
+        <button
+          onClick={handleSubmit}
+          disabled={isLoading || !mealData.name.trim()}
+          className={`w-full p-3 rounded-lg mt-6 ${
+            isLoading || !mealData.name.trim()
+              ? 'bg-gray-500 cursor-not-allowed'
+              : 'bg-primary-100 hover:bg-primary-200'
+          }`}
+        >
+          {isLoading ? 'Wird gespeichert...' : 'Speichern'}
+        </button>
+      </div>
+
       <div className="h-16" />
       <BottomNavBar activePage="addmeal" />
     </div>
   );
-}
+};
 
 export default AddMeal;
