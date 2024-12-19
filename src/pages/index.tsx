@@ -254,7 +254,7 @@ const Day: React.FC<DayProps> = ({ date, posts, expandedPostId, setExpandedPostI
   };
 
   return (
-    <div className="flex flex-col items-center px-4 animate-fadeIn">
+    <div className="flex flex-col items-center animate-fadeIn">
       <div className="w-full bg-gray-800 rounded-xl p-4 mb-4">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-2xl font-bold text-white-100">{weekday}</h2>
