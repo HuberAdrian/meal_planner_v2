@@ -1,13 +1,24 @@
 "use client";
 import { useEffect, useState } from 'react';
-import { FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
+import { FiX, FiCheck, FiShoppingCart, FiRefreshCcw, FiPlus } from 'react-icons/fi';
 import BottomNavBar from '~/components/BottomNavBar';
 import { type NextPage } from "next";
 import { api } from "~/utils/api";
 import { useRouter } from 'next/router';
 import { toast } from 'react-hot-toast';
 import { Loading } from '~/components/loading';
-import { LuRefreshCw } from "react-icons/lu";
+
+const categoryOrder = [
+  "Obst & Gemüse",
+  "Frühstück",
+  "Snacks",
+  "Teigwaren",
+  "Backen",
+  "Milchprodukte",
+  "Kühlfach",
+  "Sonstiges",
+  "Haushalt"
+];
 
 type ItemGroceryList = {
   id: string;
@@ -22,6 +33,75 @@ type ItemGroceryList = {
 type MealFilterState = Record<string, boolean>;
 type CompletedItemsState = Record<string, boolean>;
 
+const GroceryListItem = ({ 
+  item, 
+  onCheck, 
+  onRemove,
+  isCompleted 
+}: { 
+  item: ItemGroceryList; 
+  onCheck: (id: string) => void;
+  onRemove: (id: string) => void;
+  isCompleted: boolean;
+}) => {
+  const formattedDate = new Date(item.usageDate).toLocaleDateString('de-DE', { 
+    weekday: 'long', 
+    day: '2-digit', 
+    month: '2-digit' 
+  });
+  const [weekday, dayMonth] = formattedDate.split(', ');
+
+  return (
+    <div 
+      className={`group flex items-center p-4 rounded-lg transition-all duration-200 ${
+        isCompleted ? 'bg-primary-400/50' : 'bg-primary-400'
+      }`}
+    >
+      <button
+        onClick={() => onCheck(item.id)}
+        className="flex-shrink-0 mr-3"
+      >
+        <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
+          isCompleted 
+            ? 'border-primary-100 bg-primary-100' 
+            : 'border-gray-400 hover:border-primary-100'
+        }`}>
+          {isCompleted && <FiCheck className="text-white text-sm" />}
+        </div>
+      </button>
+
+      <div 
+        className={`flex-grow min-w-0 cursor-pointer ${
+          isCompleted ? 'text-gray-500' : 'text-white'
+        }`}
+        onClick={() => onCheck(item.id)}
+      >
+        <div className="flex items-baseline justify-between">
+          <span className={`font-medium ${isCompleted ? 'line-through' : ''}`}>
+            {item.name}
+          </span>
+          {isCompleted && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onRemove(item.id);
+              }}
+              className="ml-2 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+            >
+              <FiX className="text-gray-400 hover:text-red-400 transition-colors" />
+            </button>
+          )}
+        </div>
+        <p className={`text-sm truncate ${
+          isCompleted ? 'text-gray-500' : 'text-gray-300'
+        }`}>
+          {item.reference} ({weekday}, {dayMonth})
+        </p>
+      </div>
+    </div>
+  );
+};
+
 const Grocerylist: NextPage = () => {
   const [items, setItems] = useState<ItemGroceryList[]>([]);
   const [newItemName, setNewItemName] = useState('');
@@ -32,7 +112,6 @@ const Grocerylist: NextPage = () => {
 
   const { data, isLoading, refetch } = api.groceryList.getAllOpen.useQuery();
 
-  // Load saved filter states from localStorage
   useEffect(() => {
     const savedFilters = localStorage.getItem('mealFilters');
     if (savedFilters) {
@@ -52,7 +131,6 @@ const Grocerylist: NextPage = () => {
     }
   }, []);
 
-  // Load completed items from localStorage
   useEffect(() => {
     const savedCompletedItems = localStorage.getItem('completedGroceryItems');
     if (savedCompletedItems) {
@@ -72,7 +150,6 @@ const Grocerylist: NextPage = () => {
     }
   }, []);
 
-  // Save filter states to localStorage whenever they change
   useEffect(() => {
     if (Object.keys(mealFilters).length > 0) {
       localStorage.setItem('mealFilters', JSON.stringify(mealFilters));
@@ -81,14 +158,12 @@ const Grocerylist: NextPage = () => {
 
   useEffect(() => {
     if (data) {
-      // Apply completed states from localStorage to the items
       const itemsWithCompletedStates = data.map(item => ({
         ...item,
         completed: completedItems[item.id] ?? false
       }));
       setItems(itemsWithCompletedStates);
       
-      // Initialize meal filters if they don't exist
       const uniqueMeals = [...new Set(data
         .filter(item => item.reference !== 'Manuell')
         .map(item => item.reference))];
@@ -97,7 +172,7 @@ const Grocerylist: NextPage = () => {
         const newFilters = { ...prev };
         uniqueMeals.forEach(meal => {
           if (newFilters[meal] === undefined) {
-            newFilters[meal] = true; // Default to shown
+            newFilters[meal] = true;
           }
         });
         return newFilters;
@@ -106,11 +181,11 @@ const Grocerylist: NextPage = () => {
   }, [data, completedItems]);
 
   useEffect(() => {
-    const anyCompleted = items.some(item => item.completed);
+    const anyCompleted = items.some(item => completedItems[item.id]);
     setIsAnyItemCompleted(anyCompleted);
-  }, [items]);
+  }, [items, completedItems]);
 
-  const { mutate: deleting, isLoading: isDeleting } = api.groceryList.delete.useMutation({
+  const { mutate: deleting } = api.groceryList.delete.useMutation({
     onSuccess: () => {
       toast.success("Item gelöscht!");
       void router.reload();
@@ -125,7 +200,7 @@ const Grocerylist: NextPage = () => {
     },
   });
 
-  const { mutate: creating, isLoading: isPosting } = api.groceryList.create.useMutation({
+  const { mutate: creating } = api.groceryList.create.useMutation({
     onSuccess: () => {
       toast.success("Item hinzugefügt!");
       void router.reload();
@@ -140,20 +215,7 @@ const Grocerylist: NextPage = () => {
     },
   });
 
-  const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    void creating({
-      name: newItemName,
-      completed: false,
-      usageDate: new Date().toISOString().slice(0, 10),
-      reference: 'Manuell',
-      category: 'Sonstiges',
-    });
-    setNewItemName('');
-  };
-
   const handleRemove = (id: string) => {
-    // Remove from localStorage
     const newCompletedItems = { ...completedItems };
     delete newCompletedItems[id];
     localStorage.setItem('completedGroceryItems', JSON.stringify(newCompletedItems));
@@ -164,28 +226,18 @@ const Grocerylist: NextPage = () => {
   };
 
   const handleCheck = (id: string) => {
-    setItems(items.map(item => {
-      if (item.id === id) {
-        const newCompletedState = !item.completed;
-        // Update localStorage
-        const newCompletedItems = {
-          ...completedItems,
-          [id]: newCompletedState
-        };
-        localStorage.setItem('completedGroceryItems', JSON.stringify(newCompletedItems));
-        setCompletedItems(newCompletedItems);
-        return { ...item, completed: newCompletedState };
-      }
-      return item;
-    }));
+    setCompletedItems(prev => {
+      const newState = { ...prev, [id]: !prev[id] };
+      localStorage.setItem('completedGroceryItems', JSON.stringify(newState));
+      return newState;
+    });
   };
 
   const handleDeleteAll = () => {
     const completedItemIds = items
-      .filter(item => item.completed)
+      .filter(item => completedItems[item.id])
       .map(item => item.id);
 
-    // Remove completed items from localStorage
     const newCompletedItems = { ...completedItems };
     completedItemIds.forEach(id => {
       delete newCompletedItems[id];
@@ -193,15 +245,9 @@ const Grocerylist: NextPage = () => {
     localStorage.setItem('completedGroceryItems', JSON.stringify(newCompletedItems));
     setCompletedItems(newCompletedItems);
 
-    // Delete items from database
     completedItemIds.forEach(id => {
       void handleRemove(id);
     });
-  };
-
-  const refreshData = () => {
-    void refetch();
-    toast.success("Data refreshed!");
   };
 
   const toggleMealFilter = (meal: string) => {
@@ -211,105 +257,146 @@ const Grocerylist: NextPage = () => {
     }));
   };
 
-  if (isLoading || isPosting) return <Loading />;
+  const refreshData = () => {
+    void refetch();
+    toast.success("Liste aktualisiert!");
+  };
 
-  // Filter and sort items
+  if (isLoading) return <Loading />;
+
   const filteredItems = items.filter(item => 
     item.reference === 'Manuell' || mealFilters[item.reference]
   );
 
-  const sortedItems = [...filteredItems].sort((a, b) => {
-    if (a.category !== b.category) {
-      return a.category.localeCompare(b.category);
+  const processedItems: ItemGroceryList[] = filteredItems.map(item => ({
+    ...item,
+    // Clean up category - remove the "ingredientX:" prefix if it exists
+    category: item.category.includes(':') ? 
+      (item.category.split(':')[1] ?? 'Sonstiges') : 
+      (item.category ?? 'Sonstiges')
+  }));
+
+  const sortedItems = [...processedItems].sort((a, b) => {
+    const categoryA = a.category ?? 'Sonstiges';
+    const categoryB = b.category ?? 'Sonstiges';
+    const categoryIndexA = categoryOrder.indexOf(categoryA);
+    const categoryIndexB = categoryOrder.indexOf(categoryB);
+    
+    if (categoryIndexA !== categoryIndexB) {
+      return categoryIndexA - categoryIndexB;
     }
+    
     return a.name.localeCompare(b.name);
   });
 
-  // Get unique meals for filter buttons
   const uniqueMeals = [...new Set(items
     .filter(item => item.reference !== 'Manuell')
     .map(item => item.reference))];
 
   return (
-    <div className="flex flex-col items-center p-4 pt-4 min-h-screen bg-primary-400">
+    <div className="flex flex-col items-center p-4 min-h-screen bg-primary-400">
       <div className="sticky top-0 z-10 flex justify-between items-center bg-primary-400 py-4 px-2 w-full max-w-md">
-        <h1 className="text-3xl font-bold text-white">Einkaufsliste</h1>
+        <div className="flex items-center gap-3">
+          <FiShoppingCart className="text-2xl text-white" />
+          <h1 className="text-3xl font-bold text-white">Einkaufsliste</h1>
+        </div>
         <button
-          className="p-2 bg-blue-500 text-white rounded"
+          className="p-2 text-white hover:text-primary-100 transition-colors"
           onClick={refreshData}
         >
-          <LuRefreshCw className="text-2xl" />
+          <FiRefreshCcw className="text-2xl" />
         </button>
       </div>
-      <form onSubmit={onSubmit} className="flex items-center mb-4 w-full max-w-md my-4">
-        <input
-          type="text"
-          value={newItemName}
-          onChange={(e) => setNewItemName(e.target.value)}
-          placeholder="Neues Item"
-          className="border p-2 w-full mr-1 rounded mb-2 text-black"
-        />
-        <button
-          type='submit'
-          className={`font-bold w-10 border p-2 ml-1 mb-2 rounded focus:outline-none focus:shadow-outline ${!newItemName ? 'bg-gray-500 cursor-not-allowed' : 'bg-blue-500 hover:bg-blue-700 text-white'}`}
-          disabled={!newItemName}
+
+      <div className="w-full max-w-md space-y-6">
+        <form 
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (!newItemName.trim()) return;
+            
+            void creating({
+              name: newItemName,
+              completed: false,
+              usageDate: new Date().toISOString().slice(0, 10),
+              reference: 'Manuell',
+              category: 'Sonstiges',
+            });
+            setNewItemName('');
+          }} 
+          className="flex gap-2 mt-4"
         >
-          +
-        </button>
-      </form>
+          <input
+            type="text"
+            value={newItemName}
+            onChange={(e) => setNewItemName(e.target.value)}
+            placeholder="Neues Item"
+            className="flex-grow p-3 rounded-lg bg-primary-300 text-white placeholder-gray-400 border border-gray-600 focus:border-primary-100 focus:outline-none"
+          />
+          <button
+            type="submit"
+            disabled={!newItemName.trim()}
+            className={`p-3 rounded-lg transition-colors ${
+              !newItemName.trim()
+                ? 'bg-gray-600 cursor-not-allowed'
+                : 'bg-primary-100 hover:bg-primary-200'
+            }`}
+          >
+            <FiPlus className="text-white text-xl" />
+          </button>
+        </form>
 
-      {/* Meal filter buttons */}
-      <div className="w-full max-w-md mb-4 overflow-x-auto">
-        <div className="flex space-x-2 pb-2">
-          {uniqueMeals.map((meal) => (
-            <button
-              key={meal}
-              onClick={() => toggleMealFilter(meal)}
-              className={`px-4 py-2 rounded-lg whitespace-nowrap ${
-                mealFilters[meal]
-                  ? 'bg-primary-100 text-white'
-                  : 'bg-gray-600 text-gray-300'
-              }`}
-            >
-              {meal}
-            </button>
-          ))}
+        {uniqueMeals.length > 0 && (
+          <div className="overflow-x-auto">
+            <div className="flex gap-2 pb-2">
+              {uniqueMeals.map((meal) => (
+                <button
+                  key={meal}
+                  onClick={() => toggleMealFilter(meal)}
+                  className={`px-4 py-2 rounded-lg whitespace-nowrap transition-colors ${
+                    mealFilters[meal]
+                      ? 'bg-primary-100 text-white'
+                      : 'bg-primary-300 text-gray-300'
+                  }`}
+                >
+                  {meal}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="space-y-3">
+          {sortedItems.map((item, index) => {
+            const prevItem = sortedItems[index - 1];
+            
+            return (
+              <div key={item.id}>
+                {index > 0 && item.category !== prevItem?.category && (
+                  <hr className="border-t border-gray-600 my-4" />
+                )}
+                <GroceryListItem
+                  item={item}
+                  onCheck={(id) => handleCheck(id)}
+                  onRemove={(id) => handleRemove(id)}
+                  isCompleted={completedItems[item.id] ?? false}
+                />
+              </div>
+            );
+          })}
         </div>
+
+        {isAnyItemCompleted && (
+          <button
+            className="w-full p-3 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors"
+            onClick={handleDeleteAll}
+          >
+            Erledigte Items löschen
+          </button>
+        )}
       </div>
 
-      <ul className="w-full max-w-md">
-        {sortedItems.map((item, index) => {
-          const prevItem = sortedItems[index - 1];
-          const formattedDate = new Date(item.usageDate).toLocaleDateString('de-DE', { weekday: 'long', day: '2-digit', month: '2-digit' });
-          const [weekday, dayMonth] = formattedDate.split(', ');
-
-          return (
-            <div key={item.id}>
-              {index > 0 && item.category !== prevItem?.category && (
-                <hr className="border-t border-gray-300 my-2" />
-              )}
-              <li onClick={() => handleCheck(item.id)} className="rounded-lg flex items-center bg-white shadow p-4 mb-3">
-                <span className={`flex-grow w-[30%] ${item.completed ? 'text-gray-500 line-through' : 'text-black'}`}>{item.name}</span>
-                <span className={`flex-grow w-[70%] ml-2 mr-2 overflow-x-scroll ${item.completed ? 'text-gray-500 line-through' : 'text-gray-500'}`}>{item.reference} ({weekday}, {dayMonth})</span>
-                {item.completed && (
-                  <button onClick={() => handleRemove(item.id)} className="mr-4">
-                    <FaTimesCircle color="red" />
-                  </button>
-                )}
-              </li>
-            </div>
-          );
-        })}
-      </ul>
-      <BottomNavBar activePage='grocerylist' />
-      <button
-        className={`max-w-md font-bold py-2 w-full rounded-lg focus:outline-none focus:shadow-outline ${!isAnyItemCompleted ? 'bg-gray-500 cursor-not-allowed' : 'bg-red-500 hover:bg-red-700 text-white'}`}
-        onClick={handleDeleteAll}
-        disabled={!isAnyItemCompleted}
-      >
-        Löschen
-      </button>
       <div className="h-16" />
+      <BottomNavBar activePage='grocerylist' />
     </div>
   );
 };
