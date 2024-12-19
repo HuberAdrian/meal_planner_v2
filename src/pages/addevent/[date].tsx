@@ -142,14 +142,14 @@ const AddEvent: NextPage = () => {
   const formattedDate = new Date(date as string).toLocaleDateString('de-DE', { weekday: 'long', day: '2-digit', month: '2-digit' });
 
   const { mutate: createEvent, isLoading: isPosting } = api.post.create.useMutation({
-    onSuccess: async () => {
+    onSuccess: () => {
       toast.success("Erfolgreich hinzugefügt!");
       
       if (title === "9e4io1e") {
         const potentialDate = new Date(eventTime);
         potentialDate.setDate(potentialDate.getDate() + 30);
         
-        await createPotentialEvent({
+        createPotentialEvent({
           mealID: "",
           eventType: "event",
           topic: "Potentiell 9e4io1e",
