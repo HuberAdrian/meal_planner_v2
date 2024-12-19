@@ -216,6 +216,10 @@ export default function Home() {
   );
 }
 
+
+
+// ------------------ DAY COMPONENT ------------------
+
 const Day: React.FC<DayProps> = ({ date, posts, expandedPostId, setExpandedPostId, selectedMealPost, setSelectedMealPost }) => {
   const router = useRouter();
 
@@ -250,67 +254,90 @@ const Day: React.FC<DayProps> = ({ date, posts, expandedPostId, setExpandedPostI
   };
 
   return (
-    <div className="flex flex-col items-center px-4">
-      <div className="flex items-center justify-between w-full">
-        <h2 className="text-2xl font-bold self-start">{`${weekday}`}</h2>
-        <h2 className="text-2xl font-bold self-start">{`${dayMonth}`}</h2>
+    <div className="flex flex-col items-center px-4 animate-fadeIn">
+      <div className="w-full bg-gray-800 rounded-xl p-4 mb-4">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-2xl font-bold text-white-100">{weekday}</h2>
+          <h2 className="text-xl text-gray-300">{dayMonth}</h2>
+        </div>
+
+        <div className="space-y-3">
+          {posts.map((post, index) => {
+            const isExpanded = expandedPostId === post.id;
+            let formattedTime = post.eventDate.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+
+            if (post.eventType === "meal") {
+              formattedTime = Object.entries(timeOptions).find(([_, time]) => time === formattedTime)?.[0] ?? formattedTime;
+            }
+
+            const isSpecialEvent = post.topic === "9e4io1e" || post.topic === "Potentiell 9e4io1e";
+
+            return (
+              <div 
+                key={post.id}
+                className={`relative group transition-all duration-200 ${
+                  index !== 0 ? 'mt-3' : ''
+                }`}
+              >
+                <div 
+                  className={`flex items-start rounded-lg p-4 cursor-pointer transition-all duration-200 hover:translate-x-1 ${
+                    isSpecialEvent
+                      ? 'bg-red-900/30 hover:bg-red-900/40'
+                      : 'bg-gray-700 hover:bg-gray-600'
+                  }`}
+                  onClick={() => handlePostClick(post)}
+                >
+                  <div className="flex flex-col items-center mr-4 min-w-[60px]">
+                    <span className="text-sm text-primary-100 font-medium">{formattedTime}</span>
+                    <img 
+                      src={post.eventType === "meal" ? "/meal_default.png" : "/event_default.png"} 
+                      alt="Icon"
+                      className="w-8 h-8 mt-2 rounded"
+                    />
+                  </div>
+
+                  <div className="flex-1 min-w-0">
+                    <h3 className={`font-semibold mb-1 ${isSpecialEvent ? 'text-red-400' : 'text-white'}`}>
+                      {post.topic}
+                    </h3>
+                    {(!post.eventType || post.eventType !== "meal") && (
+                      <p className={`text-sm text-gray-400 transition-all duration-200 ${
+                        isExpanded ? 'line-clamp-none' : 'line-clamp-2'
+                      }`}>
+                        {post.content}
+                      </p>
+                    )}
+                  </div>
+
+                  <button 
+                    className="ml-3 p-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDelete(post.id)();
+                    }}
+                  >
+                    <FiX className="text-gray-400 hover:text-red-400 transition-colors duration-200" />
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        <button
+          className="mt-4 w-full p-3 border border-gray-600 rounded-lg text-gray-400 hover:text-white hover:border-primary-100 transition-all duration-200 flex items-center justify-center gap-2"
+          onClick={() => { void router.push(`/addevent/${date}`); }}
+        >
+          <FiPlus className="text-lg" />
+          <span>Neuer Eintrag</span>
+        </button>
       </div>
-      {posts.map((post, index) => {
-        const isExpanded = expandedPostId === post.id;
-
-        let formattedTime = post.eventDate.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
-
-        if (post.eventType === "meal") {
-          formattedTime = (Object.keys(timeOptions) as TimeOptionsKeys[]).find(key => timeOptions[key] === formattedTime) ?? formattedTime;
-        }
-
-        return (
-          <div key={index} className="flex items-start rounded-lg justify-between w-full my-1 border p-3">
-            <div className="text-lg text-primary-100 font-bold self-center transform -rotate-90 flex-shrink-0 mr-2 -ml-3">{formattedTime}</div>
-            <img src={post.eventType === "meal" ? "/meal_default.png" : "/event_default.png"} alt="Post" className="w-12 h-12 bg-white flex-shrink-0 mr-3 -ml-2" />
-            <div 
-              className="flex flex-col flex-grow overflow-x-scroll cursor-pointer" 
-              onClick={(e) => {
-                e.stopPropagation();
-                handlePostClick(post);
-              }}
-            >
-              <h2 className="text-xl font-bold">{post.topic}</h2>
-              {(!post.eventType || post.eventType !== "meal") && isExpanded && (
-                <p className="text-sm text-gray-500">{post.content}</p>
-              )}
-              {(!post.eventType || post.eventType !== "meal") && !isExpanded && (
-                <p className="text-sm text-gray-500">
-                  {`${post.content.slice(0, 50)}${post.content.length > 50 ? '...' : ''}`}
-                </p>
-              )}
-              {post.eventType === "meal" && (
-                <p className="text-sm text-gray-500">
-                  {`${post.content.slice(0, 50)}${post.content.length > 50 ? '...' : ''}`}
-                </p>
-              )}
-            </div>
-            <button 
-              className="pl-2 pr-0 py-2 text-white rounded self-start sm:self-auto flex-shrink-0"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleDelete(post.id)();
-              }}
-            >
-              <FiX className="text-2xl" />
-            </button>
-          </div>
-        )
-      })}
-      <button
-        className="w-10 h-10 border text-white flex rounded-full items-center justify-center mt-4"
-        onClick={() => { void router.push(`/addevent/${date}`); }}
-      >
-        <FiPlus className="items-center justify-center" />
-      </button>
     </div>
   );
-}
+};
+
+
+// ---------------------------- Monthly View ----------------------------
 
 const MonthlyView: React.FC<{ 
   posts: Post[], 
