@@ -117,13 +117,13 @@ const AddMeal: NextPage = () => {
   return (
     <div className="flex flex-col items-center p-4 min-h-screen bg-primary-400 text-white">
       <div className="sticky top-0 z-10 flex justify-between items-center bg-primary-400 py-4 px-2 w-full max-w-md">
-        <h1 className="text-3xl font-bold">Essen hinzufügen</h1>
+        <div className="flex items-center gap-3">
+          <h1 className="text-3xl font-bold">Essen hinzufügen</h1>
+          <ToggleSwitch onToggle={handleToggle} initialState={false} />
+        </div>
       </div>
 
-      <ToggleSwitch onToggle={handleToggle} initialState={false} />
-
       <div className="w-full max-w-md mt-6">
-        {/* Tab Navigation */}
         <div className="flex mb-6">
           <button
             className={`flex-1 py-2 px-4 ${activeTab === 'details' ? 'bg-primary-100 text-white' : 'bg-primary-300'} rounded-l-lg transition-colors`}
@@ -139,7 +139,6 @@ const AddMeal: NextPage = () => {
           </button>
         </div>
 
-        {/* Details Tab */}
         {activeTab === 'details' && (
           <div className="space-y-4">
             <div className="bg-primary-300 p-4 rounded-lg">
@@ -179,7 +178,6 @@ const AddMeal: NextPage = () => {
           </div>
         )}
 
-        {/* Ingredients Tab */}
         {activeTab === 'ingredients' && (
           <div className="space-y-4">
             {ingredients.map((ingredient, index) => (

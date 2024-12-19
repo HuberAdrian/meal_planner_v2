@@ -19,7 +19,7 @@ const mealTypes = [
   "Suppen",
 ] as const;
 
-type Meal = {
+interface Meal {
   id: string;
   createdAt: Date;
   name: string;
@@ -41,8 +41,8 @@ type Meal = {
   ingredient15: string | null;
   categories: string[];
   completed: boolean;
-  type: string;
-};
+  type: typeof mealTypes[number];
+}
 
 type EditModalProps = {
   meal: Meal;
@@ -68,7 +68,6 @@ const EditModal: React.FC<EditModalProps> = ({ meal, onClose, onSave }) => {
   const [activeIngredients, setActiveIngredients] = useState<number[]>([]);
 
   useEffect(() => {
-    // Initialize ingredient categories from the meal's categories array
     const categories: Record<number, string> = {};
     editedMeal.categories?.forEach(category => {
       const match = /^ingredient(\d+):(.+)$/.exec(category);
@@ -78,7 +77,6 @@ const EditModal: React.FC<EditModalProps> = ({ meal, onClose, onSave }) => {
     });
     setIngredientCategories(categories);
 
-    // Initialize active ingredients
     const active = Array.from({ length: 15 }).reduce((acc: number[], _, index) => {
       const ingredientKey = `ingredient${index + 1}` as keyof Meal;
       if (editedMeal[ingredientKey]) {
@@ -107,7 +105,6 @@ const EditModal: React.FC<EditModalProps> = ({ meal, onClose, onSave }) => {
       return newCategories;
     });
 
-    // Update the categories array in editedMeal
     const newCategories = Object.entries(ingredientCategories).map(
       ([index, cat]) => `ingredient${index}:${cat}`
     );
@@ -144,7 +141,6 @@ const EditModal: React.FC<EditModalProps> = ({ meal, onClose, onSave }) => {
       ...prev,
       [`ingredient${index + 1}`]: null
     }));
-    // Remove category for this ingredient
     const newCategories = { ...ingredientCategories };
     delete newCategories[index];
     setIngredientCategories(newCategories);
@@ -170,7 +166,7 @@ const EditModal: React.FC<EditModalProps> = ({ meal, onClose, onSave }) => {
             <label className="block text-white font-bold mb-2">Typ:</label>
             <select
               value={editedMeal.type ?? 'andere Hauptgerichte'}
-              onChange={e => setEditedMeal(prev => ({ ...prev, type: e.target.value }))}
+              onChange={e => setEditedMeal(prev => ({ ...prev, type: e.target.value as typeof mealTypes[number] }))}
               className="w-full p-2 rounded bg-white text-black"
             >
               {mealTypes.map((type) => (
@@ -310,7 +306,6 @@ const DeleteMeal: NextPage = () => {
       return;
     }
   
-    // Ensure all required fields are present and convert undefined to null
     const updateData = {
       id: updatedMeal.id,
       name: updatedMeal.name ?? "",
@@ -345,40 +340,32 @@ const DeleteMeal: NextPage = () => {
   const handleToggle = (state: boolean) => {
     if (!state) {
       void router.push("/addmeal");
-    } else {
-      void router.push("/deletemeal");
     }
   };
 
   useEffect(() => {
     if (data) {
-      setMeals(data);
+      setMeals(data.map(meal => ({
+        ...meal,
+        type: meal.type as typeof mealTypes[number]
+      })));
     }
   }, [data]);
 
   if (isLoading) return <div>Loading...</div>;
 
-
-
   const filteredMeals = activeType === "Alle" 
     ? meals 
     : meals.filter(meal => meal.type === activeType);
 
-    if (data && data.length > 0 && data[0]) {
-      console.log("Example meal type:", data[0].type);
-      console.log("Type comparison:", {
-        mealType: data[0].type,
-        isMatch: data[0].type === "andere Hauptgerichte",
-        typeOf: typeof data[0].type,
-        length: data[0].type.length,
-        charCodes: Array.from(data[0].type).map(c => c.charCodeAt(0))
-      });
-    }
-
     return (
       <div className="flex flex-col items-center p-4 min-h-screen bg-primary-400">
-        <h1 className="text-3xl font-bold mb-4 text-white">Essen Löschen</h1>
-        <ToggleSwitch onToggle={handleToggle} initialState={true} />
+        <div className="sticky top-0 z-10 flex justify-between items-center bg-primary-400 py-4 px-2 w-full max-w-md">
+          <div className="flex items-center gap-3">
+            <h1 className="text-3xl font-bold text-white">Essen bearbeiten</h1>
+            <ToggleSwitch onToggle={handleToggle} initialState={true} />
+          </div>
+        </div>
   
         {/* Type filter buttons */}
         <div className="w-full max-w-md mb-4 overflow-x-auto">
@@ -447,6 +434,6 @@ const DeleteMeal: NextPage = () => {
         <BottomNavBar activePage="addmeal" />
       </div>
     );
-  };
-  
-  export default DeleteMeal;
+  }
+
+export default DeleteMeal;

@@ -1,4 +1,3 @@
-"useclient"
 import { useState } from 'react';
 
 interface ToggleSwitchProps {
@@ -15,20 +14,25 @@ const ToggleSwitch = ({ onToggle, initialState }: ToggleSwitchProps) => {
   };
 
   return (
-    <div className="w-full flex justify-center items-center mb-4">
-      <label htmlFor="toogleA" className="flex items-center cursor-pointer">
-        <div className="relative">
-          <input id="toogleA" type="checkbox" className="hidden" checked={isToggled} onChange={handleToggle} />
-          <div className="toggle__line w-10 h-4 bg-gray-400 rounded-full shadow-inner"></div>
-          <div className={`toggle__dot absolute w-6 h-6 bg-white rounded-full shadow inset-y-0 left-0 ${isToggled ? 'translate-x-4' : 'translate-x-0'}`}></div>
-        </div>
-        <div className="ml-3 text-gray-700 font-medium">
-          {isToggled ? 'hinzufügen' : 'löschen'}
-        </div>
-      </label>
-    </div>
+    <label className="relative inline-flex cursor-pointer">
+      <input
+        type="checkbox"
+        className="sr-only"
+        checked={isToggled}
+        onChange={handleToggle}
+      />
+      <div
+        className={`w-10 h-5 rounded-full transition-colors duration-300 ease-in-out ${
+          isToggled ? 'bg-primary-100' : 'bg-primary-300'
+        }`}
+      />
+      <div
+        className={`absolute left-0.5 top-0.5 bg-white w-4 h-4 rounded-full transition-transform duration-300 ease-in-out ${
+          isToggled ? 'transform translate-x-5' : 'transform translate-x-0'
+        }`}
+      />
+    </label>
   );
 };
 
 export default ToggleSwitch;
-
