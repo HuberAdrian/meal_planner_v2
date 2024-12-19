@@ -329,7 +329,7 @@ const Day: React.FC<DayProps> = ({ date, posts, expandedPostId, setExpandedPostI
           onClick={() => { void router.push(`/addevent/${date}`); }}
         >
           <FiPlus className="text-lg" />
-          <span>Neuer Eintrag</span>
+          <span></span>
         </button>
       </div>
     </div>
