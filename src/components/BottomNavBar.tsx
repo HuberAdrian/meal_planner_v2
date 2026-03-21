@@ -4,11 +4,11 @@ import { GiMeal } from "react-icons/gi";
 import { BsCalendar2Week } from "react-icons/bs";
 import { HiOutlineShoppingCart } from "react-icons/hi";
 import { BsBarChartLineFill } from "react-icons/bs";
-import { FaUser } from "react-icons/fa";
+import { FaUser, FaGift } from "react-icons/fa";
 import { type FC } from "react";
 
 interface BottomNavBarProps {
-  activePage: 'addmeal' | 'calendar' | 'grocerylist' | 'user' | 'history' | 'expenses';
+  activePage: 'addmeal' | 'calendar' | 'grocerylist' | 'user' | 'history' | 'expenses' | 'bonus';
 }
 
 const BottomNavBar: FC<BottomNavBarProps> = ({ activePage }) => {
@@ -28,6 +28,10 @@ const BottomNavBar: FC<BottomNavBarProps> = ({ activePage }) => {
 
   const handleHistoryClick = () => {
     void router.push('/history');
+  };
+
+  const handleBonusClick = () => {
+    void router.push('/bonus');
   };
 
   return (
@@ -50,11 +54,17 @@ const BottomNavBar: FC<BottomNavBarProps> = ({ activePage }) => {
       >
         <BsCalendar2Week className="text-2xl" />
       </button>
-      <button 
+      <button
         onClick={handleHistoryClick}
         className={`p-2 rounded-lg ${(activePage === 'history' || activePage === 'expenses') ? 'text-primary-100' : 'text-white'}`}
       >
         <BsBarChartLineFill className="text-2xl" />
+      </button>
+      <button
+        onClick={handleBonusClick}
+        className={`p-2 rounded-lg ${activePage === 'bonus' ? 'text-primary-100' : 'text-white'}`}
+      >
+        <FaGift className="text-2xl" />
       </button>
       <Link href="/user-profile">
         <FaUser className={`text-2xl ${activePage === 'user' ? 'text-primary-100' : 'text-white'}`} />
