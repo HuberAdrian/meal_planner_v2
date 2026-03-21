@@ -1,15 +1,13 @@
-import { type AppType } from "next/app";
-
-import { api } from "~/utils/api";
-
-import "~/styles/globals.css";
 import { ClerkProvider } from "@clerk/nextjs";
+import type { AppType } from "next/app";
 import Head from 'next/head';
+import { api } from "~/utils/api";
+import "~/styles/globals.css";
 
 const MyApp: AppType = ({ Component, pageProps }) => {
-  return(
-  <>
-  <Head>
+  return (
+    <>
+      <Head>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="theme-color" content="#222629" />
         <link rel="manifest" href="/manifest.json" />
@@ -20,12 +18,12 @@ const MyApp: AppType = ({ Component, pageProps }) => {
         <title>Organisation</title>
         <meta name="description" content="Organisationsapp für Vivien" />
         <link rel="icon" href="/favicon.ico" />
-    </Head>
-  <ClerkProvider {...pageProps}>
-      <Component {...pageProps} />
-    </ClerkProvider>
-    </>)
-
+      </Head>
+      <ClerkProvider>
+        <Component {...pageProps} />
+      </ClerkProvider>
+    </>
+  );
 };
 
 export default api.withTRPC(MyApp);

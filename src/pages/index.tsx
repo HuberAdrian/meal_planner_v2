@@ -82,7 +82,11 @@ const LandingPage: React.FC = () => {
         onClick={handleClick} 
         className="object-cover w-auto h-auto max-w-[350px] max-h-[350px]"
       />
-      <SignInButton>Login</SignInButton>
+      <SignInButton mode="modal">
+        <button className="mt-4 px-6 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
+          Login
+        </button>
+      </SignInButton>
     </div>
   );
 };
