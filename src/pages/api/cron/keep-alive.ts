@@ -13,21 +13,8 @@ export default async function handler(
   }
 
   try {
-    // Create a temporary post
-    const keepAlive = await prisma.post.create({
-      data: {
-        eventDate: new Date(),
-        eventType: "keep-alive",
-        topic: "keep-alive",
-        content: `Database keep-alive ping at ${new Date().toISOString()}`,
-        deleted: true, // mark as deleted so it never shows in the UI
-      },
-    });
-
-    // Delete it immediately
-    await prisma.post.delete({
-      where: { id: keepAlive.id },
-    });
+    // Lightweight query — just enough to register database activity
+    await prisma.$queryRaw`SELECT 1`;
 
     console.log(`[keep-alive] Ping successful at ${new Date().toISOString()}`);
     return res.status(200).json({ ok: true, timestamp: new Date().toISOString() });
