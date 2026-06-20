@@ -9,11 +9,10 @@ export type GiftCategory = "small" | "medium" | "large" | "jackpot";
 
 export interface Gift {
   id: string;
-  name: string; // actual gift name (usually hidden)
-  revealText: string; // what the user sees after scratching
+  name: string;
+  revealText: string;
   category: GiftCategory;
   cost: number;
-  revealName: boolean; // if true, show actual name; if false, show vague message
 }
 
 export interface DoublePointsPeriod {
@@ -35,18 +34,14 @@ export interface BonusState {
   redemptionLog: RedemptionLog[];
 }
 
-export const VAGUE_MESSAGE =
-  "Du wirst in den nächsten Tagen eine kleine Überraschung erhalten \u2764\uFE0F";
-
 export const GIFTS: Gift[] = [
   // Small Gifts (10+ Points)
   {
     id: "handwritten-letter",
     name: "Handgeschriebener Brief",
-    revealText: VAGUE_MESSAGE,
+    revealText: "Handgeschriebener Brief ❤️",
     category: "small",
     cost: 10,
-    revealName: false,
   },
   {
     id: "bonus-3-points",
@@ -54,33 +49,29 @@ export const GIFTS: Gift[] = [
     revealText: "+3 Bonus Punkte! Wurden deinem Konto gutgeschrieben.",
     category: "small",
     cost: 10,
-    revealName: true,
   },
   {
     id: "blumen",
     name: "Blumen liefern lassen",
-    revealText: VAGUE_MESSAGE,
+    revealText: "Blumen liefern lassen 💐",
     category: "small",
     cost: 12,
-    revealName: false,
   },
 
   // Medium Gifts (15-30 Points)
   {
     id: "bastelset",
     name: "Bastelset / Kreativ-Paket",
-    revealText: VAGUE_MESSAGE,
+    revealText: "Bastelset / Kreativ-Paket 🎨",
     category: "medium",
     cost: 15,
-    revealName: false,
   },
   {
     id: "essen",
     name: "Essen bestellen",
-    revealText: VAGUE_MESSAGE,
+    revealText: "Essen bestellen 🍕",
     category: "medium",
     cost: 20,
-    revealName: false,
   },
   {
     id: "double-points",
@@ -89,46 +80,38 @@ export const GIFTS: Gift[] = [
       "Doppelte Punkte aktiviert! Du erhältst jetzt 20 Tage lang 2 Punkte pro Tag.",
     category: "medium",
     cost: 25,
-    revealName: true,
   },
   {
     id: "mittagessen",
     name: "Mittagessen bezahlen",
-    revealText: VAGUE_MESSAGE,
+    revealText: "Mittagessen bezahlen 🍽️",
     category: "medium",
     cost: 30,
-    revealName: false,
   },
 
   // Large Gifts (40-60 Points)
   {
     id: "weekend-event",
     name: "Weekend Event (Spa, Konzert, ...)",
-    revealText:
-      "Ein besonderes Event wartet auf dich! Details folgen bald...",
+    revealText: "Weekend Event (Spa, Konzert, ...) 🎉",
     category: "large",
     cost: 50,
-    revealName: false,
   },
   {
     id: "fancy-dinner",
     name: "Fancy Dinner",
-    revealText:
-      "Ein besonderer Abend erwartet dich! Mehr Details kommen bald...",
+    revealText: "Fancy Dinner 🥂",
     category: "large",
     cost: 60,
-    revealName: false,
   },
 
   // Jackpot (140 Points)
   {
     id: "jackpot",
     name: "Jackpot-Überraschung",
-    revealText:
-      "DER JACKPOT! Eine ganz besondere Überraschung wartet auf dich...",
+    revealText: "DER JACKPOT! Jackpot-Überraschung 🎰",
     category: "jackpot",
     cost: 140,
-    revealName: false,
   },
 ];
 
@@ -158,7 +141,6 @@ export function calculateDoublePointsBonus(
     const end = new Date(
       start.getTime() + period.durationDays * 24 * 60 * 60 * 1000
     );
-    // Count days elapsed within this double-points window, capped by now
     const effectiveEnd = now < end ? now : end;
     const daysActive = Math.max(
       0,
@@ -166,7 +148,7 @@ export function calculateDoublePointsBonus(
         (effectiveEnd.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)
       )
     );
-    bonus += daysActive; // each day in the window earns 1 extra point
+    bonus += daysActive;
   }
   return bonus;
 }

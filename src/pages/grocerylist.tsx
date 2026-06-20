@@ -4,7 +4,6 @@ import { FiX, FiCheck, FiShoppingCart, FiRefreshCcw, FiPlus } from 'react-icons/
 import BottomNavBar from '~/components/BottomNavBar';
 import { type NextPage } from "next";
 import { api } from "~/utils/api";
-import { useRouter } from 'next/router';
 import { toast } from 'react-hot-toast';
 import { Loading } from '~/components/loading';
 
@@ -108,8 +107,6 @@ const Grocerylist: NextPage = () => {
   const [isAnyItemCompleted, setIsAnyItemCompleted] = useState(false);
   const [mealFilters, setMealFilters] = useState<MealFilterState>({});
   const [completedItems, setCompletedItems] = useState<CompletedItemsState>({});
-  const router = useRouter();
-
   const { data, isLoading, refetch } = api.groceryList.getAllOpen.useQuery();
 
   useEffect(() => {
@@ -186,10 +183,6 @@ const Grocerylist: NextPage = () => {
   }, [items, completedItems]);
 
   const { mutate: deleting } = api.groceryList.delete.useMutation({
-    onSuccess: () => {
-      toast.success("Item gelöscht!");
-      void router.reload();
-    },
     onError: (e) => {
       const errorMessage = e.data?.zodError?.fieldErrors.content;
       if (errorMessage?.[0]) {
@@ -203,7 +196,7 @@ const Grocerylist: NextPage = () => {
   const { mutate: creating } = api.groceryList.create.useMutation({
     onSuccess: () => {
       toast.success("Item hinzugefügt!");
-      void router.reload();
+      void refetch();
     },
     onError: (e) => {
       const errorMessage = e.data?.zodError?.fieldErrors.content;
@@ -221,8 +214,9 @@ const Grocerylist: NextPage = () => {
     localStorage.setItem('completedGroceryItems', JSON.stringify(newCompletedItems));
     setCompletedItems(newCompletedItems);
 
-    void deleting({ id });
-    toast.success("Essen gelöscht!");
+    deleting({ id }, {
+      onSuccess: () => void refetch(),
+    });
   };
 
   const handleCheck = (id: string) => {
@@ -238,6 +232,8 @@ const Grocerylist: NextPage = () => {
       .filter(item => completedItems[item.id])
       .map(item => item.id);
 
+    if (completedItemIds.length === 0) return;
+
     const newCompletedItems = { ...completedItems };
     completedItemIds.forEach(id => {
       delete newCompletedItems[id];
@@ -245,8 +241,17 @@ const Grocerylist: NextPage = () => {
     localStorage.setItem('completedGroceryItems', JSON.stringify(newCompletedItems));
     setCompletedItems(newCompletedItems);
 
+    let completed = 0;
     completedItemIds.forEach(id => {
-      void handleRemove(id);
+      deleting({ id }, {
+        onSuccess: () => {
+          completed++;
+          if (completed === completedItemIds.length) {
+            toast.success("Erledigte Items gelöscht!");
+            void refetch();
+          }
+        },
+      });
     });
   };
 

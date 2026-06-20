@@ -331,7 +331,7 @@ const ProgressBar: FC<{ daysPassed: number; onAnimationDone?: () => void }> = ({
 
 // Reunion countdown bar — boy and girl walking toward each other
 const REUNION_START = new Date("2026-02-16T00:00:00");
-const REUNION_DATE = new Date("2026-05-26T00:00:00");
+const REUNION_DATE = new Date("2026-07-10T00:00:00");
 const REUNION_TOTAL_DAYS = Math.round(
   (REUNION_DATE.getTime() - REUNION_START.getTime()) / (1000 * 60 * 60 * 24)
 );
@@ -734,10 +734,7 @@ const BonusPage: FC = () => {
       return next;
     });
 
-    toast.success(
-      gift.revealName ? gift.revealText : "Geschenk eingelöst! \u2764\uFE0F",
-      { duration: 4000 }
-    );
+    toast.success(gift.revealText, { duration: 4000 });
   };
 
   const giftsByCategory: Record<GiftCategory, Gift[]> = {

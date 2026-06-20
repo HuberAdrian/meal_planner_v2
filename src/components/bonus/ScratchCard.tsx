@@ -271,7 +271,7 @@ const ScratchCard: FC<ScratchCardProps> = ({
               justRedeemed ? "animate-bounce-in" : ""
             }`}
           >
-            <div className="text-3xl">{gift.revealName ? "\u2728" : "\uD83C\uDF81"}</div>
+            <div className="text-3xl">{"\u2728"}</div>
             <p className="text-sm text-gray-200 leading-relaxed">
               {gift.revealText}
             </p>
