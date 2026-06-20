@@ -208,6 +208,17 @@ const Grocerylist: NextPage = () => {
     },
   });
 
+  const { mutate: deletingMany } = api.groceryList.deleteMany.useMutation({
+    onSuccess: () => {
+      toast.success("Erledigte Items gelöscht!");
+      void refetch();
+    },
+    onError: () => {
+      toast.error("Fehler beim Löschen");
+      void refetch();
+    },
+  });
+
   const handleRemove = (id: string) => {
     const newCompletedItems = { ...completedItems };
     delete newCompletedItems[id];
@@ -241,18 +252,7 @@ const Grocerylist: NextPage = () => {
     localStorage.setItem('completedGroceryItems', JSON.stringify(newCompletedItems));
     setCompletedItems(newCompletedItems);
 
-    let completed = 0;
-    completedItemIds.forEach(id => {
-      deleting({ id }, {
-        onSuccess: () => {
-          completed++;
-          if (completed === completedItemIds.length) {
-            toast.success("Erledigte Items gelöscht!");
-            void refetch();
-          }
-        },
-      });
-    });
+    deletingMany({ ids: completedItemIds });
   };
 
   const toggleMealFilter = (meal: string) => {

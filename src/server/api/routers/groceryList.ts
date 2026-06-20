@@ -81,4 +81,18 @@ export const groceryRouter = createTRPCRouter({
 
       return item;
     }),
+
+  deleteMany: publicProcedure
+    .input(z.object({
+      ids: z.array(z.string()).min(1),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const result = await ctx.prisma.itemGroceryList.deleteMany({
+        where: {
+          id: { in: input.ids },
+        },
+      });
+
+      return result;
+    }),
 });

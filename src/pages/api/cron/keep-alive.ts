@@ -27,16 +27,23 @@ export default async function handler(
           apikey: supabaseKey,
           Authorization: `Bearer ${supabaseKey}`,
         },
+        signal: AbortSignal.timeout(10_000),
       }
     );
 
-    if (!response.ok) {
+    // Reaching the Supabase API gateway at all counts as project activity,
+    // which is what prevents the free-tier database from sleeping. Only a
+    // server-side (5xx) or network failure means the request never landed.
+    if (response.status >= 500) {
       throw new Error(`Supabase REST API returned ${response.status}`);
     }
 
+    console.log(
+      `[keep-alive] OK (status ${response.status}) at ${new Date().toISOString()}`
+    );
     return res
       .status(200)
-      .json({ ok: true, timestamp: new Date().toISOString() });
+      .json({ ok: true, status: response.status, timestamp: new Date().toISOString() });
   } catch (error) {
     console.error("[keep-alive] Failed:", error);
     return res.status(500).json({ error: "Keep-alive failed" });

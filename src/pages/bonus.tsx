@@ -329,19 +329,27 @@ const ProgressBar: FC<{ daysPassed: number; onAnimationDone?: () => void }> = ({
   );
 };
 
-// Reunion countdown bar — boy and girl walking toward each other
-const REUNION_START = new Date("2026-02-16T00:00:00");
+// Reunion countdown bar — boy and girl walking toward each other.
+// Progress is measured from REUNION_START to REUNION_DATE (independent of the
+// bonus program's day counter, which starts on a different date).
+const REUNION_START = new Date("2026-06-09T00:00:00");
 const REUNION_DATE = new Date("2026-07-10T00:00:00");
 const REUNION_TOTAL_DAYS = Math.round(
   (REUNION_DATE.getTime() - REUNION_START.getTime()) / (1000 * 60 * 60 * 24)
 );
 
-const ReunionBar: FC<{ daysPassed: number; active: boolean }> = ({
-  daysPassed,
-  active,
-}) => {
-  const daysUntilReunion = Math.max(0, REUNION_TOTAL_DAYS - daysPassed);
-  const pct = Math.min(100, (daysPassed / REUNION_TOTAL_DAYS) * 100);
+const ReunionBar: FC<{ now: Date; active: boolean }> = ({ now, active }) => {
+  const daysElapsed = Math.max(
+    0,
+    Math.min(
+      REUNION_TOTAL_DAYS,
+      Math.floor(
+        (now.getTime() - REUNION_START.getTime()) / (1000 * 60 * 60 * 24)
+      )
+    )
+  );
+  const daysUntilReunion = Math.max(0, REUNION_TOTAL_DAYS - daysElapsed);
+  const pct = Math.min(100, (daysElapsed / REUNION_TOTAL_DAYS) * 100);
   const [animatedPct, setAnimatedPct] = useState(0);
   const [showCharacters, setShowCharacters] = useState(false);
   const [walking, setWalking] = useState(false);
@@ -782,10 +790,7 @@ const BonusPage: FC = () => {
             onAnimationDone={handleFirstBarDone}
           />
 
-          <ReunionBar
-            daysPassed={points.daysPassed}
-            active={reunionBarActive}
-          />
+          <ReunionBar now={now} active={reunionBarActive} />
 
           {(["small", "medium", "large", "jackpot"] as GiftCategory[]).map(
             (cat) => (
