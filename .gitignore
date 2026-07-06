@@ -43,5 +43,6 @@ yarn-error.log*
 
 # claude
 .claude/
+CLAUDE.md
 restore_data.sql
 .vscode/
