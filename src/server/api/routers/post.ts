@@ -1,46 +1,11 @@
 import { z } from "zod";
 
 import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
-import { groceryRouter } from "./groceryList";
 
 type MealMonth = {
   id: string;
   name: string;
   timesEaten: number;
-};
-
-type Meal = {
-  id: string;
-  createdAt: Date;
-  name: string;
-  description: string;
-  ingredient1: string;
-  ingredient2: string;
-  ingredient3: string;
-  ingredient4: string;
-  ingredient5: string;
-  ingredient6: string;
-  ingredient7: string;
-  ingredient8: string;
-  ingredient9: string;
-  ingredient10: string;
-  ingredient11: string;
-  ingredient12: string;
-  ingredient13: string;
-  ingredient14: string;
-  ingredient15: string;
-  categories: string[];
-  completed: boolean;
-};
-
-type Post = {
-  id: string;
-  createdAt: Date;
-  eventDate: Date;
-  eventType: string;
-  topic: string;
-  content: string;
-  deleted: boolean;
 };
 
 export const postRouter = createTRPCRouter({
@@ -66,41 +31,51 @@ export const postRouter = createTRPCRouter({
     })
   )
   .mutation(async ({ ctx, input }) => {
-    const post = await ctx.prisma.post.create({
-      data: {
-        topic: input.topic,
-        content: input.content,
-        eventDate: input.eventDate,
-        eventType: input.eventType,
+    const postData = {
+      topic: input.topic,
+      content: input.content,
+      eventDate: input.eventDate,
+      eventType: input.eventType,
+    };
+
+    if (input.eventType !== 'meal') {
+      return ctx.prisma.post.create({ data: postData });
+    }
+
+    const meal = await ctx.prisma.meal.findUnique({
+      where: {
+        id: input.mealID,
       },
     });
 
-    // If the post is of type 'meal', add ingredients to the grocery list
-    if (input.eventType === 'meal') {
-      const meal = await ctx.prisma.meal.findUnique({
-        where: {
-          id: input.mealID,
-        },
-      });
+    if (meal === null) {
+      throw new Error('Essen nicht gefunden, Einkaufsliste nicht erstellt');
+    }
 
-      if (meal === null) {
-        throw new Error('Essen nicht gefunden, Einkaufsliste nicht erstellt');
-      }
-
-      const ingredients = input.ingredients.map(ingredient => ingredient.name).filter((ingredient) => ingredient.trim() !== '');
-
-      for (let i = 0; i < ingredients.length; i++) {
-        await ctx.prisma.itemGroceryList.create({
-          data: {
-            usageDate: input.eventDate.toISOString(),
-            name: ingredients[i] ?? '404',
-            reference: input.topic,
-            completed: false,
-            category: meal.categories[i] ?? 'Sonstiges',
-          },
-        });
+    // Meal.categories entries are stored as "ingredientN:Kategorie", keyed by
+    // the ingredient's slot — match by slot id, not by array position.
+    const categoryBySlot = new Map<string, string>();
+    for (const entry of meal.categories) {
+      const match = /^(ingredient\d+):(.+)$/.exec(entry);
+      if (match?.[1] && match[2]) {
+        categoryBySlot.set(match[1], match[2]);
       }
     }
+
+    const groceryItems = input.ingredients
+      .filter((ingredient) => ingredient.name.trim() !== '')
+      .map((ingredient) => ({
+        usageDate: input.eventDate.toISOString(),
+        name: ingredient.name,
+        reference: input.topic,
+        completed: false,
+        category: categoryBySlot.get(ingredient.id) ?? 'Sonstiges',
+      }));
+
+    const [post] = await ctx.prisma.$transaction([
+      ctx.prisma.post.create({ data: postData }),
+      ctx.prisma.itemGroceryList.createMany({ data: groceryItems }),
+    ]);
 
     return post;
   }),
