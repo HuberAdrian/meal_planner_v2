@@ -1,472 +1,350 @@
 import { SignInButton, useUser } from "@clerk/nextjs";
 import Head from "next/head";
-import BottomNavBar from "~/components/BottomNavBar";
-import { Error, Loading } from "~/components/loading";
-import { api } from "~/utils/api";
-import { useState } from "react";
-import { FiPlus, FiX, FiChevronLeft, FiChevronRight } from "react-icons/fi";
-import { useRouter } from 'next/router';
-import useInfiniteScroll from 'react-infinite-scroll-hook';
+import { useRouter } from "next/router";
+import { useMemo, useState, type FC } from "react";
 import toast from "react-hot-toast";
-import { GoArrowSwitch } from "react-icons/go";
+import useInfiniteScroll from "react-infinite-scroll-hook";
+import { FiPlus, FiX, FiChevronLeft, FiChevronRight, FiList, FiCalendar, FiTrash2 } from "react-icons/fi";
 import { LuRefreshCw } from "react-icons/lu";
+import PageShell from "~/components/layout/PageShell";
+import { ErrorState, Loading } from "~/components/loading";
+import { api, type RouterOutputs } from "~/utils/api";
+import {
+  addDays,
+  formatDayHeading,
+  formatMonthYear,
+  formatTime,
+  relativeDayLabel,
+  startOfToday,
+  toDateKey,
+  todayKey,
+  type DateKey,
+} from "~/lib/dates";
+import { timeOptions } from "~/lib/meals";
 
-type Post = {
-  id: string;
-  createdAt: Date;
-  eventDate: Date;
-  eventType: string;
-  topic: string;
-  content: string;
-  deleted: boolean;
-};
+type Post = RouterOutputs["post"]["getUpcoming"][number];
+type GroupedPosts = Record<DateKey, Post[]>;
 
-type MealPopupProps = {
-  post: Post;
-  onClose: () => void;
-};
+const SPECIAL_TOPICS = ["9e4io1e", "Potentiell 9e4io1e"];
+const isSpecial = (post: Post) => SPECIAL_TOPICS.includes(post.topic);
 
-const MealPopup: React.FC<MealPopupProps> = ({ post, onClose }) => {
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-primary-400 rounded-lg p-6 w-11/12 max-w-md relative">
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 text-white hover:text-gray-300"
-        >
-          <FiX className="text-2xl" />
-        </button>
-        <h2 className="text-2xl font-bold mb-4 text-white pr-8">{post.topic}</h2>
-        <div className="text-gray-300 whitespace-pre-wrap">
-          {post.content}
-        </div>
-      </div>
-    </div>
-  );
-};
+function groupPostsByDate(posts: Post[]): GroupedPosts {
+  const grouped: GroupedPosts = {};
+  for (const post of posts) {
+    const key = toDateKey(post.eventDate);
+    (grouped[key] ??= []).push(post);
+  }
+  return grouped;
+}
 
-type GroupedPosts = Record<string, Post[]>;
-
-type DayProps = {
-  date: string;
-  posts: Post[];
-  expandedPostId: string | null;
-  setExpandedPostId: (id: string | null) => void;
-  selectedMealPost: Post | null;
-  setSelectedMealPost: (post: Post | null) => void;
-};
-
-const timeOptions: Record<TimeOptionsKeys, string> = {
-  "Morgens": "09:00",
-  "Mittags": "13:00",
-  "Abends": "19:00",
-};
-
-type TimeOptionsKeys = "Morgens" | "Mittags" | "Abends";
+function mealTimeLabel(post: Post): string {
+  const time = formatTime(post.eventDate);
+  if (post.eventType === "meal") {
+    const match = Object.entries(timeOptions).find(([, t]) => t === time);
+    if (match) return match[0];
+  }
+  return time;
+}
 
 // ------------------ NOT LOGGED IN ------------------
-const LandingPage: React.FC = () => {
+const LandingPage: FC = () => {
   const [currentImage, setCurrentImage] = useState(0);
   const images = ["/Vivien.png", "/Adrian.png", "/Benni.png"];
-
-  const handleClick = () => {
-    setCurrentImage((currentImage + 1) % images.length);
-  };
-
-  return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-primary-400 p-4">
-      <h1 className="text-4xl mb-4">geh weg</h1>
-      <img 
-        src={images[currentImage]} 
-        alt="Welcome" 
-        onClick={handleClick} 
-        className="object-cover w-auto h-auto max-w-[350px] max-h-[350px]"
-      />
-      <SignInButton mode="modal">
-        <button className="mt-4 px-6 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
-          Login
-        </button>
-      </SignInButton>
-    </div>
-  );
-};
-
-// ------------------ HOME VIEW ------------------
-
-export default function Home() {
-  const [dates, setDates] = useState(generateNextTwoWeeks());
-  const [view, setView] = useState<'infinite' | 'monthly'>('infinite');
-  const [selectedDate, setSelectedDate] = useState<string | null>(null);
-  const [expandedPostId, setExpandedPostId] = useState<string | null>(null);
-  const [selectedMealPost, setSelectedMealPost] = useState<Post | null>(null);
-
-  const { data, isLoading, refetch } = api.post.getAllExceptPast.useQuery();
-  const { refetch: refetchGroceryList } = api.groceryList.getAllOpen.useQuery();
-  const user = useUser();
-
-  const refreshData = () => {
-    void refetch();
-    void refetchGroceryList();
-    toast.success("Data refreshed!");
-  };
-
-  // ------------------ INFINITE SCROLL ------------------
-  const loadMore = () => {
-    if (!dates.every(item => typeof item === 'string')) {
-      return;
-    }
-    const lastDateString = dates[dates.length - 1];
-    if (typeof lastDateString !== 'string') {
-      return;
-    }
-    const lastDate = new Date(lastDateString);
-    const newDates: string[] = [];
-    for (let i = 1; i <= 14; i++) {
-      const date = new Date(lastDate);
-      date.setDate(date.getDate() + i);
-      const dateString = date.toISOString().split('T')[0];
-      if (typeof dateString !== 'string') {
-        return;
-      }
-      newDates.push(dateString);
-    }
-    if (typeof newDates[0] !== 'string') {
-      return;
-    }
-    setDates(prevDates => [...prevDates, ...newDates]);
-  };
-
-  const [infiniteRef] = useInfiniteScroll({
-    loading: false,
-    hasNextPage: true,
-    onLoadMore: loadMore,
-  });
-
-  if (!user.isSignedIn) return <LandingPage />;
-  if (isLoading) return <Loading />;
-  if (!data) return <Error />;
-
-  const groupedPosts = groupPostsByDate(data);
 
   return (
     <>
       <Head>
-        <title>Organisation</title>
-        <meta name="description" content="11uhr11" />
-        <link rel="icon" href="/favicon.ico" />
+        <title>11uhr11</title>
       </Head>
-      <main className="flex flex-col sm:flex-row min-h-screen items-center bg-primary-400 p-4">
-        <div className=" w-full sm:max-w-md mx-auto rounded-xl overflow-y-scroll overflow-x-hidden">
-          <div className="sticky top-0 z-10 flex justify-between items-center bg-primary-400 py-4 px-2">
-            <h2 className="text-4xl">Kalender</h2>
-            <div className="flex items-center">
-              <button
-                className="p-2 bg-blue-500 text-white rounded mr-2"
-                onClick={() => {
-                  setView(view === 'infinite' ? 'monthly' : 'infinite');
-                  setSelectedDate(null);
-                }}
-              >
-                <GoArrowSwitch className="text-2xl" />
-              </button>
-              <button
-                className="p-2 bg-blue-500 text-white rounded"
-                onClick={refreshData}
-              >
-                <LuRefreshCw className="text-2xl" />
-              </button>
-            </div>
-          </div>
-          {view === 'infinite' ? (
-            <ul className="px-2 py-2">
-              {dates.map((date, index) => (
-                <div key={index} >
-                  <hr className="border-t border-gray-300 mt-4 mb-2 mx-4" />
-                  <Day 
-                    date={date} 
-                    posts={groupedPosts[date] ?? []}
-                    expandedPostId={expandedPostId}
-                    setExpandedPostId={setExpandedPostId}
-                    selectedMealPost={selectedMealPost}
-                    setSelectedMealPost={setSelectedMealPost}
-                  />
-                </div>
-              ))}
-            </ul>
-          ) : (
-            <MonthlyView 
-              posts={data} 
-              selectedDate={selectedDate}
-              setSelectedDate={setSelectedDate} 
-              groupedPosts={groupedPosts}
-              expandedPostId={expandedPostId}
-              setExpandedPostId={setExpandedPostId}
-              selectedMealPost={selectedMealPost}
-              setSelectedMealPost={setSelectedMealPost}
-            />
-          )}
-          {view === 'infinite' && <div ref={infiniteRef}>Laden...</div>}
-        </div>
-        <div className="h-16" />
-        <BottomNavBar activePage="calendar" />
-      </main>
-      {selectedMealPost && (
-        <MealPopup 
-          post={selectedMealPost} 
-          onClose={() => setSelectedMealPost(null)} 
+      <main className="flex min-h-screen flex-col items-center justify-center gap-6 bg-primary-400 p-6">
+        <h1 className="text-4xl font-bold">geh weg</h1>
+        <img
+          src={images[currentImage]}
+          alt="Willkommen"
+          onClick={() => setCurrentImage((currentImage + 1) % images.length)}
+          className="max-h-[320px] max-w-[320px] cursor-pointer rounded-2xl object-cover select-none"
         />
-      )}
+        <SignInButton mode="modal">
+          <button className="btn btn-primary min-w-40">Anmelden</button>
+        </SignInButton>
+      </main>
     </>
   );
-}
+};
 
-
-
-// ------------------ DAY COMPONENT ------------------
-
-const Day: React.FC<DayProps> = ({ date, posts, expandedPostId, setExpandedPostId, selectedMealPost, setSelectedMealPost }) => {
-  const router = useRouter();
-
-  const formattedDate = new Date(date).toLocaleDateString('de-DE', { weekday: 'long', day: '2-digit', month: '2-digit' });
-  const [weekday, dayMonth] = formattedDate.split(', ');
-
-  const { mutate } = api.post.delete.useMutation({
+// ------------------ DETAIL SHEET ------------------
+const PostSheet: FC<{ post: Post; onClose: () => void; onDeleted: () => void }> = ({ post, onClose, onDeleted }) => {
+  const [confirming, setConfirming] = useState(false);
+  const { mutate, isLoading } = api.post.delete.useMutation({
     onSuccess: () => {
-      toast.success("Gelöscht!");
-      void router.reload();
+      toast.success("Gelöscht");
+      onDeleted();
     },
-    onError: (e) => {
-      const errorMessage = e.data?.zodError?.fieldErrors.content;
-      if (errorMessage?.[0]) {
-        toast.error(errorMessage[0]);
-      } else {
-        toast.error("Fehler beim Löschen");
-      }
-    },
+    onError: (e) => toast.error(e.message || "Fehler beim Löschen"),
   });
 
-  const handleDelete = (id: string) => () => {
-    mutate({ id });
-  };
+  const { weekday, dayMonth } = formatDayHeading(toDateKey(post.eventDate));
 
-  const handlePostClick = (post: Post) => {
-    if (post.eventType === "meal") {
-      setSelectedMealPost(post);
-    } else {
-      setExpandedPostId(expandedPostId === post.id ? null : post.id);
-    }
+  return (
+    <div className="sheet-backdrop" onClick={onClose}>
+      <div className="sheet" onClick={(e) => e.stopPropagation()}>
+        <div className="mb-4 flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-xs font-semibold tracking-wide text-muted uppercase">
+              {post.eventType === "meal" ? "Mahlzeit" : "Termin"} · {weekday}, {dayMonth} · {mealTimeLabel(post)}
+            </p>
+            <h2 className={`mt-1 text-2xl font-bold ${isSpecial(post) ? "text-red-300" : "text-white"}`}>{post.topic}</h2>
+          </div>
+          <button onClick={onClose} className="btn-icon -mr-2 shrink-0" aria-label="Schließen">
+            <FiX className="text-xl" />
+          </button>
+        </div>
+        {post.content && post.content !== "-" && (
+          <p className="mb-5 whitespace-pre-wrap text-gray-300">{post.content}</p>
+        )}
+        {confirming ? (
+          <div className="flex gap-2">
+            <button className="btn btn-secondary flex-1" onClick={() => setConfirming(false)}>
+              Abbrechen
+            </button>
+            <button className="btn btn-danger flex-1" disabled={isLoading} onClick={() => mutate({ id: post.id })}>
+              <FiTrash2 /> {isLoading ? "Löscht…" : "Wirklich löschen"}
+            </button>
+          </div>
+        ) : (
+          <button className="btn btn-ghost w-full" onClick={() => setConfirming(true)}>
+            <FiTrash2 /> Löschen
+            {post.eventType === "meal" && <span className="text-xs text-muted">(inkl. Einkaufsliste)</span>}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// ------------------ DAY CARD ------------------
+const Day: FC<{ dateKey: DateKey; posts: Post[]; onSelect: (post: Post) => void }> = ({ dateKey, posts, onSelect }) => {
+  const router = useRouter();
+  const { weekday, dayMonth } = formatDayHeading(dateKey);
+  const relative = relativeDayLabel(dateKey);
+  const isToday = dateKey === todayKey();
+
+  return (
+    <section className={`card animate-fade-in ${isToday ? "border-primary-100/50" : ""}`}>
+      <div className="mb-3 flex items-baseline justify-between">
+        <h2 className="text-lg font-bold text-white">
+          {weekday}
+          {relative && <span className="ml-2 rounded-full bg-primary-100/15 px-2 py-0.5 text-xs font-semibold text-primary-100">{relative}</span>}
+        </h2>
+        <span className="text-sm text-muted">{dayMonth}</span>
+      </div>
+
+      {posts.length === 0 ? (
+        <p className="mb-3 text-sm text-muted">Nichts geplant</p>
+      ) : (
+        <ul className="mb-3 space-y-2">
+          {posts.map((post) => (
+            <li key={post.id}>
+              <button
+                type="button"
+                onClick={() => onSelect(post)}
+                className={`flex w-full items-center gap-3 rounded-xl p-3 text-left transition-colors ${
+                  isSpecial(post) ? "bg-red-900/30 hover:bg-red-900/40" : "bg-surface-2 hover:bg-surface-3"
+                }`}
+              >
+                <img
+                  src={post.eventType === "meal" ? "/meal_default.png" : "/event_default.png"}
+                  alt=""
+                  className="h-9 w-9 shrink-0 rounded-lg"
+                />
+                <div className="min-w-0 flex-1">
+                  <p className={`truncate font-semibold ${isSpecial(post) ? "text-red-300" : "text-white"}`}>{post.topic}</p>
+                  <p className="text-xs text-muted">
+                    {mealTimeLabel(post)}
+                    {post.eventType !== "meal" && post.content && post.content !== "-" && (
+                      <span className="text-gray-400"> · {post.content}</span>
+                    )}
+                  </p>
+                </div>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <button
+        className="btn btn-secondary w-full py-2 text-muted hover:text-white"
+        onClick={() => void router.push(`/addevent/${dateKey}`)}
+      >
+        <FiPlus /> Hinzufügen
+      </button>
+    </section>
+  );
+};
+
+// ------------------ LIST VIEW ------------------
+const ListView: FC<{ onSelect: (post: Post) => void }> = ({ onSelect }) => {
+  const [from] = useState(() => startOfToday());
+  const [dayCount, setDayCount] = useState(14);
+  const { data, isLoading, isError, refetch } = api.post.getUpcoming.useQuery({ from });
+
+  const [infiniteRef] = useInfiniteScroll({
+    loading: false,
+    hasNextPage: dayCount < 365,
+    onLoadMore: () => setDayCount((n) => n + 14),
+    rootMargin: "0px 0px 300px 0px",
+  });
+
+  const grouped = useMemo(() => groupPostsByDate(data ?? []), [data]);
+  const days = useMemo(() => Array.from({ length: dayCount }, (_, i) => toDateKey(addDays(from, i))), [from, dayCount]);
+
+  if (isLoading) return <Loading />;
+  if (isError) return <ErrorState onRetry={() => void refetch()} />;
+
+  return (
+    <div className="space-y-3">
+      {days.map((key) => (
+        <Day key={key} dateKey={key} posts={grouped[key] ?? []} onSelect={onSelect} />
+      ))}
+      <div ref={infiniteRef} className="py-4 text-center text-xs text-muted">
+        {dayCount < 365 ? "Weiter scrollen für mehr Tage" : ""}
+      </div>
+    </div>
+  );
+};
+
+// ------------------ MONTH VIEW ------------------
+const MonthView: FC<{ onSelect: (post: Post) => void }> = ({ onSelect }) => {
+  const [cursor, setCursor] = useState(() => {
+    const d = startOfToday();
+    return new Date(d.getFullYear(), d.getMonth(), 1);
+  });
+  const [selectedDate, setSelectedDate] = useState<DateKey | null>(todayKey());
+
+  const monthStart = cursor;
+  const monthEnd = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1);
+  const { data, isLoading, isError, refetch } = api.post.getInRange.useQuery({ from: monthStart, to: monthEnd });
+  const grouped = useMemo(() => groupPostsByDate(data ?? []), [data]);
+
+  const daysInMonth = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 0).getDate();
+  const leadingBlanks = (monthStart.getDay() + 6) % 7; // Monday first
+  const today = todayKey();
+
+  const move = (delta: number) => {
+    setCursor(new Date(cursor.getFullYear(), cursor.getMonth() + delta, 1));
+    setSelectedDate(null);
   };
 
   return (
-    <div className="flex flex-col items-center animate-fadeIn">
-      <div className="w-full bg-gray-800 rounded-xl p-4 mb-4">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-2xl font-bold text-white-100">{weekday}</h2>
-          <h2 className="text-xl text-gray-300">{dayMonth}</h2>
+    <div className="space-y-4">
+      <div className="card">
+        <div className="mb-3 flex items-center justify-between">
+          <button className="btn-icon" onClick={() => move(-1)} aria-label="Vorheriger Monat">
+            <FiChevronLeft className="text-xl" />
+          </button>
+          <span className="font-semibold capitalize">{formatMonthYear(cursor)}</span>
+          <button className="btn-icon" onClick={() => move(1)} aria-label="Nächster Monat">
+            <FiChevronRight className="text-xl" />
+          </button>
         </div>
-
-        <div className="space-y-3">
-          {posts.map((post, index) => {
-            const isExpanded = expandedPostId === post.id;
-            let formattedTime = post.eventDate.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
-
-            if (post.eventType === "meal") {
-              formattedTime = Object.entries(timeOptions).find(([_, time]) => time === formattedTime)?.[0] ?? formattedTime;
-            }
-
-            const isSpecialEvent = post.topic === "9e4io1e" || post.topic === "Potentiell 9e4io1e";
-
+        <div className="grid grid-cols-7 gap-1 text-center">
+          {["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"].map((d) => (
+            <div key={d} className="py-1 text-xs font-semibold text-muted">
+              {d}
+            </div>
+          ))}
+          {Array.from({ length: leadingBlanks }).map((_, i) => (
+            <div key={`blank-${i}`} />
+          ))}
+          {Array.from({ length: daysInMonth }, (_, i) => i + 1).map((day) => {
+            const key = toDateKey(new Date(cursor.getFullYear(), cursor.getMonth(), day));
+            const posts = grouped[key] ?? [];
+            const selected = selectedDate === key;
+            const hasSpecial = posts.some(isSpecial);
             return (
-              <div 
-                key={post.id}
-                className={`relative group transition-all duration-200 ${
-                  index !== 0 ? 'mt-3' : ''
+              <button
+                key={key}
+                type="button"
+                onClick={() => setSelectedDate(selected ? null : key)}
+                className={`flex aspect-square flex-col items-center justify-center rounded-lg text-sm transition-colors ${
+                  selected
+                    ? "bg-primary-100 font-bold text-primary-400"
+                    : key === today
+                      ? "bg-surface-2 font-bold text-primary-100"
+                      : "text-gray-200 hover:bg-surface-2"
                 }`}
               >
-                <div 
-                  className={`flex items-start rounded-lg p-4 cursor-pointer transition-all duration-200 hover:translate-x-1 ${
-                    isSpecialEvent
-                      ? 'bg-red-900/30 hover:bg-red-900/40'
-                      : 'bg-gray-700 hover:bg-gray-600'
+                {day}
+                <span
+                  className={`mt-0.5 h-1.5 w-1.5 rounded-full ${
+                    posts.length === 0 ? "bg-transparent" : hasSpecial ? "bg-red-400" : selected ? "bg-primary-400" : "bg-primary-100"
                   }`}
-                  onClick={() => handlePostClick(post)}
-                >
-                  <div className="flex flex-col items-center mr-4 min-w-[60px]">
-                    <span className="text-sm text-primary-100 font-medium">{formattedTime}</span>
-                    <img 
-                      src={post.eventType === "meal" ? "/meal_default.png" : "/event_default.png"} 
-                      alt="Icon"
-                      className="w-8 h-8 mt-2 rounded"
-                    />
-                  </div>
-
-                  <div className="flex-1 min-w-0">
-                    <h3 className={`font-semibold mb-1 ${isSpecialEvent ? 'text-red-400' : 'text-white'}`}>
-                      {post.topic}
-                    </h3>
-                    {(!post.eventType || post.eventType !== "meal") && (
-                      <p className={`text-sm text-gray-400 transition-all duration-200 ${
-                        isExpanded ? 'line-clamp-none' : 'line-clamp-2'
-                      }`}>
-                        {post.content}
-                      </p>
-                    )}
-                  </div>
-
-                  <button 
-                    className="ml-3 p-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDelete(post.id)();
-                    }}
-                  >
-                    <FiX className="text-gray-400 hover:text-red-400 transition-colors duration-200" />
-                  </button>
-                </div>
-              </div>
+                />
+              </button>
             );
           })}
         </div>
-
-        <button
-          className="mt-4 w-full p-3 border border-gray-600 rounded-lg text-gray-400 hover:text-white hover:border-primary-100 transition-all duration-200 flex items-center justify-center gap-2"
-          onClick={() => { void router.push(`/addevent/${date}`); }}
-        >
-          <FiPlus className="text-lg" />
-          <span></span>
-        </button>
       </div>
+      {isLoading && <Loading />}
+      {isError && <ErrorState onRetry={() => void refetch()} />}
+      {selectedDate && !isLoading && <Day dateKey={selectedDate} posts={grouped[selectedDate] ?? []} onSelect={onSelect} />}
     </div>
   );
 };
 
+// ------------------ HOME ------------------
+export default function Home() {
+  const { isLoaded, isSignedIn } = useUser();
+  const [view, setView] = useState<"list" | "month">("list");
+  const [selectedPost, setSelectedPost] = useState<Post | null>(null);
+  const utils = api.useContext();
 
-// ---------------------------- Monthly View ----------------------------
+  if (!isLoaded) return <Loading />;
+  if (!isSignedIn) return <LandingPage />;
 
-const MonthlyView: React.FC<{ 
-  posts: Post[], 
-  selectedDate: string | null, 
-  setSelectedDate: (date: string | null) => void, 
-  groupedPosts: GroupedPosts, 
-  expandedPostId: string | null, 
-  setExpandedPostId: (id: string | null) => void,
-  selectedMealPost: Post | null,
-  setSelectedMealPost: (post: Post | null) => void
-}> = ({ 
-  posts, 
-  selectedDate, 
-  setSelectedDate, 
-  groupedPosts, 
-  expandedPostId, 
-  setExpandedPostId,
-  selectedMealPost,
-  setSelectedMealPost
-}) => {
-  const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
-  const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
-
-  const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
-  const firstDayOfMonth = (new Date(currentYear, currentMonth, 1).getDay() + 6) % 7; // Adjust to start from Monday
-
-  const daysArray = Array.from({ length: daysInMonth }, (_, i) => i + 1);
-
-  const handlePrevMonth = () => {
-    if (currentMonth === 0) {
-      setCurrentMonth(11);
-      setCurrentYear(currentYear - 1);
-    } else {
-      setCurrentMonth(currentMonth - 1);
-    }
-    setSelectedDate(null);
-  };
-
-  const handleNextMonth = () => {
-    if (currentMonth === 11) {
-      setCurrentMonth(0);
-      setCurrentYear(currentYear + 1);
-    } else {
-      setCurrentMonth(currentMonth + 1);
-    }
-    setSelectedDate(null);
+  const invalidateAll = () => {
+    void utils.post.invalidate();
+    void utils.groceryList.invalidate();
   };
 
   return (
-    <div className="rounded-none">
-      <div className="flex justify-between items-center mb-4 rounded-none">
-        <FiChevronLeft onClick={handlePrevMonth} className="cursor-pointer" />
-        <span className="text-xl font-bold">{new Date(currentYear, currentMonth).toLocaleDateString('de-DE', { month: 'long', year: 'numeric' })}</span>
-        <FiChevronRight onClick={handleNextMonth} className="cursor-pointer" />
-      </div>
-      <div className="grid grid-cols-7 rounded-none gap-2">
-        {["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"].map((day) => (
-          <div key={day} className="text-center font-bold">{day}</div>
-        ))}
-        {Array.from({ length: firstDayOfMonth }).map((_, i) => (
-          <div key={i}></div>
-        ))}
-        {daysArray.map((day) => {
-          const date = new Date(currentYear, currentMonth, day + 1).toISOString().split('T')[0];
-          if (date === undefined) return null;
-          const postsForDay = groupedPosts[date] ?? [];
-
-          const isSelected = selectedDate === date;
-
-          return (
-            <div 
-              key={day} 
-              className={`border p-2 cursor-pointer ${isSelected ? 'bg-primary-100 text-white' : ''}`}
-              onClick={() => setSelectedDate(isSelected ? null : date)}
-            >
-              <div className={`text-center font-bold ${isSelected ? 'text-white' : ''}`}>{day}</div>
-              {postsForDay.length > 0 && (
-                <div className={`w-2 h-2 rounded-full mx-auto mt-1 ${postsForDay.some(post => post.topic === '9e4io1e') ? 'bg-red-500' : 'bg-white'}`}></div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-      {selectedDate && (
-        <div className="mt-4">
-          <Day 
-            date={selectedDate} 
-            posts={groupedPosts[selectedDate] ?? []} 
-            expandedPostId={expandedPostId}
-            setExpandedPostId={setExpandedPostId}
-            selectedMealPost={selectedMealPost}
-            setSelectedMealPost={setSelectedMealPost}
-          />
-        </div>
+    <PageShell
+      title="Kalender"
+      activePage="calendar"
+      actions={
+        <>
+          <button
+            className="btn-icon"
+            onClick={() => setView(view === "list" ? "month" : "list")}
+            aria-label={view === "list" ? "Monatsansicht" : "Listenansicht"}
+            title={view === "list" ? "Monatsansicht" : "Listenansicht"}
+          >
+            {view === "list" ? <FiCalendar className="text-xl" /> : <FiList className="text-xl" />}
+          </button>
+          <button
+            className="btn-icon"
+            onClick={() => {
+              invalidateAll();
+              toast.success("Aktualisiert");
+            }}
+            aria-label="Aktualisieren"
+          >
+            <LuRefreshCw className="text-xl" />
+          </button>
+        </>
+      }
+    >
+      {view === "list" ? <ListView onSelect={setSelectedPost} /> : <MonthView onSelect={setSelectedPost} />}
+      {selectedPost && (
+        <PostSheet
+          post={selectedPost}
+          onClose={() => setSelectedPost(null)}
+          onDeleted={() => {
+            setSelectedPost(null);
+            invalidateAll();
+          }}
+        />
       )}
-    </div>
+    </PageShell>
   );
-};
-
-
-// ----------------- SUPPORT FUNCTIONS -----------------
-
-function groupPostsByDate(posts: Post[]): GroupedPosts {
-  return posts.reduce((groupedPosts: GroupedPosts, post) => {
-    const date = post.eventDate.toISOString().split('T')[0];
-    if (date === undefined) {
-      return groupedPosts;
-    }
-    if (!groupedPosts[date]) {
-      groupedPosts[date] = [];
-    }
-    groupedPosts[date]?.push(post);
-    return groupedPosts;
-  }, {} as GroupedPosts);
-}
-
-function generateNextTwoWeeks(): string[] {
-  const dates: string[] = [];
-  for (let i = 0; i <= 14; i++) {
-    const date = new Date();
-    date.setDate(date.getDate() + i);
-    const dateString = date.toISOString().split('T')[0];
-    if (typeof dateString == 'string') {
-      dates.push(dateString);
-    }
-  }
-  return dates;
 }

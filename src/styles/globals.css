@@ -1,149 +1,147 @@
 @import "tailwindcss";
 
 @theme {
-  --color-primary-100: #86C232;
-  --color-primary-200: #61892F;
-  --color-primary-300: #6B6E70;
+  --color-primary-100: #86c232;
+  --color-primary-200: #61892f;
+  --color-primary-300: #6b6e70;
   --color-primary-400: #222629;
   --color-primary-500: #999999;
+
+  /* Surfaces & text used across the app */
+  --color-surface: #2b3035;
+  --color-surface-2: #353b41;
+  --color-surface-3: #40474e;
+  --color-line: #3d444b;
+  --color-muted: #9ca3af;
+}
+
+html {
+  color-scheme: dark;
+  -webkit-tap-highlight-color: transparent;
 }
 
 body {
-  @apply bg-primary-400 text-white;
+  @apply bg-primary-400 text-white antialiased;
+  padding-top: env(safe-area-inset-top, 0px);
 }
 
-/* Bonus page animations */
-@keyframes particle-fly {
-  0% {
-    transform: translate(-50%, -50%) scale(0);
-    opacity: 1;
+@layer components {
+  .page {
+    @apply flex min-h-screen w-full flex-col items-center bg-primary-400 px-4;
+    padding-bottom: calc(5rem + env(safe-area-inset-bottom, 0px));
   }
-  100% {
-    transform: translate(
-      calc(-50% + var(--px, 0px)),
-      calc(-50% + var(--py, 0px))
-    ) scale(1.2);
+  .page-inner {
+    @apply w-full max-w-md;
+  }
+  .page-header {
+    @apply sticky top-0 z-10 -mx-4 mb-4 flex items-center justify-between gap-3 bg-primary-400/95 px-4 py-4 backdrop-blur-sm;
+  }
+  .page-title {
+    @apply truncate text-2xl font-bold text-white;
+  }
+
+  .card {
+    @apply rounded-2xl border border-line bg-surface p-4;
+  }
+  .card-2 {
+    @apply rounded-xl border border-line bg-surface-2 p-3;
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold transition-colors duration-150 select-none disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-primary {
+    @apply bg-primary-100 text-primary-400 hover:bg-[#93cf3e] active:bg-primary-200;
+  }
+  .btn-secondary {
+    @apply border border-line bg-surface-2 text-white hover:bg-surface-3;
+  }
+  .btn-danger {
+    @apply bg-red-500/15 text-red-300 hover:bg-red-500/25;
+  }
+  .btn-ghost {
+    @apply text-muted hover:bg-surface-2 hover:text-white;
+  }
+  .btn-icon {
+    @apply inline-flex h-10 w-10 items-center justify-center rounded-xl text-white transition-colors hover:bg-surface-2 active:bg-surface-3;
+  }
+
+  .input {
+    @apply w-full rounded-xl border border-line bg-surface-2 px-3 py-3 text-base text-white placeholder:text-muted focus:border-primary-100 focus:outline-none;
+  }
+  select.input {
+    @apply appearance-none pr-9;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+  }
+  input[type="date"].input,
+  input[type="datetime-local"].input {
+    color-scheme: dark;
+    min-height: 3rem;
+  }
+  .label {
+    @apply mb-1.5 block text-xs font-semibold tracking-wide text-muted uppercase;
+  }
+
+  .chip {
+    @apply inline-flex shrink-0 items-center rounded-full border border-line bg-surface-2 px-3 py-1.5 text-sm text-gray-200 whitespace-nowrap transition-colors;
+  }
+  .chip-active {
+    @apply border-primary-100 bg-primary-100 text-primary-400 font-semibold;
+  }
+  .chip-sm {
+    @apply rounded-full bg-surface-3 px-2 py-0.5 text-xs text-gray-200;
+  }
+
+  .segmented {
+    @apply flex rounded-xl border border-line bg-surface-2 p-1;
+  }
+  .segmented > * {
+    @apply flex-1 rounded-lg px-3 py-2 text-center text-sm font-medium text-muted transition-colors;
+  }
+  .segmented > .active {
+    @apply bg-primary-100 text-primary-400 font-semibold;
+  }
+
+  .sheet-backdrop {
+    @apply fixed inset-0 z-50 flex items-end justify-center bg-black/60 sm:items-center;
+  }
+  .sheet {
+    @apply max-h-[90vh] w-full max-w-md overflow-y-auto rounded-t-3xl border border-line bg-surface p-5 sm:rounded-3xl;
+    padding-bottom: calc(1.25rem + env(safe-area-inset-bottom, 0px));
+    animation: sheet-in 0.2s ease-out;
+  }
+
+  .hide-scrollbar {
+    scrollbar-width: none;
+  }
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@keyframes sheet-in {
+  from {
+    transform: translateY(16px);
     opacity: 0;
   }
-}
-
-@keyframes bounce-in {
-  0% {
-    transform: scale(0.3);
-    opacity: 0;
-  }
-  50% {
-    transform: scale(1.1);
-  }
-  70% {
-    transform: scale(0.95);
-  }
-  100% {
-    transform: scale(1);
+  to {
+    transform: translateY(0);
     opacity: 1;
   }
 }
 
-@keyframes boy-pull {
-  0%, 100% {
-    transform: translateX(0) rotate(0deg);
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
   }
-  25% {
-    transform: translateX(-3px) rotate(-5deg);
-  }
-  75% {
-    transform: translateX(1px) rotate(2deg);
-  }
-}
-
-@keyframes girl-bounce {
-  0%, 100% {
+  to {
+    opacity: 1;
     transform: translateY(0);
   }
-  50% {
-    transform: translateY(-3px);
-  }
 }
-
-@keyframes leg-swing {
-  0%, 100% {
-    transform: rotate(0deg);
-    transform-origin: top;
-  }
-  50% {
-    transform: rotate(8deg);
-    transform-origin: top;
-  }
-}
-
-@keyframes leg-swing-alt {
-  0%, 100% {
-    transform: rotate(0deg);
-    transform-origin: top;
-  }
-  50% {
-    transform: rotate(-8deg);
-    transform-origin: top;
-  }
-}
-
-.animate-bounce-in {
-  animation: bounce-in 0.6s ease-out;
-}
-
-.animate-boy-pull {
-  animation: boy-pull 0.5s ease-in-out infinite;
-}
-
-.animate-girl-bounce {
-  animation: girl-bounce 1.2s ease-in-out infinite;
-}
-
-.animate-leg-swing {
-  animation: leg-swing 0.8s ease-in-out infinite;
-}
-
-.animate-leg-swing-alt {
-  animation: leg-swing-alt 0.8s ease-in-out infinite 0.4s;
-}
-
-@keyframes walk-bob {
-  0%, 100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-2px);
-  }
-}
-
-@keyframes wave-arm {
-  0%, 100% {
-    transform: rotate(0deg);
-    transform-origin: bottom left;
-  }
-  50% {
-    transform: rotate(-15deg);
-    transform-origin: bottom left;
-  }
-}
-
-@keyframes heart-pulse {
-  0%, 100% {
-    transform: translateX(-50%) scale(1);
-  }
-  50% {
-    transform: translateX(-50%) scale(1.3);
-  }
-}
-
-.animate-walk {
-  animation: walk-bob 0.4s ease-in-out infinite;
-}
-
-.animate-wave {
-  animation: wave-arm 0.6s ease-in-out infinite;
-}
-
-.animate-heart-pulse {
-  animation: heart-pulse 1s ease-in-out infinite;
+.animate-fade-in {
+  animation: fade-in 0.25s ease-out;
 }

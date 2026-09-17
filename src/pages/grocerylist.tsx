@@ -1,408 +1,276 @@
-"use client";
-import { useEffect, useState } from 'react';
-import { FiX, FiCheck, FiShoppingCart, FiRefreshCcw, FiPlus } from 'react-icons/fi';
-import BottomNavBar from '~/components/BottomNavBar';
 import { type NextPage } from "next";
-import { api } from "~/utils/api";
-import { toast } from 'react-hot-toast';
-import { Loading } from '~/components/loading';
+import { useEffect, useMemo, useState, type FC } from "react";
+import toast from "react-hot-toast";
+import { FiCheck, FiPlus, FiTrash2, FiX } from "react-icons/fi";
+import { LuRefreshCw } from "react-icons/lu";
+import PageShell from "~/components/layout/PageShell";
+import { EmptyState, ErrorState, Loading } from "~/components/loading";
+import { api, type RouterOutputs } from "~/utils/api";
+import { formatDayHeading, toDateKey, todayKey } from "~/lib/dates";
+import { DEFAULT_CATEGORY, groceryCategories, sortByCategory } from "~/lib/meals";
 
-const categoryOrder = [
-  "Obst & Gemüse",
-  "Frühstück",
-  "Snacks",
-  "Teigwaren",
-  "Backen",
-  "Milchprodukte",
-  "Kühlfach",
-  "Sonstiges",
-  "Haushalt"
-];
+type Item = RouterOutputs["groceryList"]["getAll"][number];
+type MealFilters = Record<string, boolean>;
 
-type ItemGroceryList = {
-  id: string;
-  createdAt: Date;
-  usageDate: string;
-  name: string;
-  reference: string;
-  completed: boolean;
-  category: string;
-};
+const FILTERS_KEY = "mealFilters";
+const LEGACY_COMPLETED_KEY = "completedGroceryItems";
+const MANUAL = "Manuell";
 
-type MealFilterState = Record<string, boolean>;
-type CompletedItemsState = Record<string, boolean>;
+function usageLabel(item: Item): string {
+  const d = new Date(item.usageDate);
+  if (Number.isNaN(d.getTime())) return "";
+  const { weekday, dayMonth } = formatDayHeading(toDateKey(d));
+  return `${weekday.slice(0, 2)}, ${dayMonth}`;
+}
 
-const GroceryListItem = ({ 
-  item, 
-  onCheck, 
-  onRemove,
-  isCompleted 
-}: { 
-  item: ItemGroceryList; 
-  onCheck: (id: string) => void;
-  onRemove: (id: string) => void;
-  isCompleted: boolean;
-}) => {
-  const formattedDate = new Date(item.usageDate).toLocaleDateString('de-DE', { 
-    weekday: 'long', 
-    day: '2-digit', 
-    month: '2-digit' 
-  });
-  const [weekday, dayMonth] = formattedDate.split(', ');
-
-  return (
-    <div 
-      className={`group flex items-center p-4 rounded-lg transition-all duration-200 ${
-        isCompleted ? 'bg-primary-400/50' : 'bg-primary-400'
+const GroceryItem: FC<{ item: Item; onToggle: () => void; onRemove: () => void }> = ({ item, onToggle, onRemove }) => (
+  <li className={`flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors ${item.completed ? "bg-surface/60" : "bg-surface"}`}>
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-pressed={item.completed}
+      aria-label={item.completed ? "Als offen markieren" : "Als erledigt markieren"}
+      className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 transition-colors ${
+        item.completed ? "border-primary-100 bg-primary-100 text-primary-400" : "border-gray-500 hover:border-primary-100"
       }`}
     >
-      <button
-        onClick={() => onCheck(item.id)}
-        className="flex-shrink-0 mr-3"
-      >
-        <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
-          isCompleted 
-            ? 'border-primary-100 bg-primary-100' 
-            : 'border-gray-400 hover:border-primary-100'
-        }`}>
-          {isCompleted && <FiCheck className="text-white text-sm" />}
-        </div>
-      </button>
-
-      <div 
-        className={`flex-grow min-w-0 cursor-pointer ${
-          isCompleted ? 'text-gray-500' : 'text-white'
-        }`}
-        onClick={() => onCheck(item.id)}
-      >
-        <div className="flex items-baseline justify-between">
-          <span className={`font-medium ${isCompleted ? 'line-through' : ''}`}>
-            {item.name}
-          </span>
-          {isCompleted && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onRemove(item.id);
-              }}
-              className="ml-2 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-            >
-              <FiX className="text-gray-400 hover:text-red-400 transition-colors" />
-            </button>
-          )}
-        </div>
-        <p className={`text-sm truncate ${
-          isCompleted ? 'text-gray-500' : 'text-gray-300'
-        }`}>
-          {item.reference} ({weekday}, {dayMonth})
-        </p>
-      </div>
-    </div>
-  );
-};
+      {item.completed && <FiCheck className="text-sm" strokeWidth={3} />}
+    </button>
+    <button type="button" onClick={onToggle} className="min-w-0 flex-1 text-left">
+      <p className={`truncate font-medium ${item.completed ? "text-muted line-through" : "text-white"}`}>{item.name}</p>
+      <p className="truncate text-xs text-muted">
+        {item.reference === MANUAL ? "Manuell" : item.reference}
+        {item.reference !== MANUAL && usageLabel(item) && ` · ${usageLabel(item)}`}
+      </p>
+    </button>
+    <button type="button" onClick={onRemove} className="btn-icon h-8 w-8 text-muted hover:text-red-300" aria-label="Entfernen">
+      <FiX />
+    </button>
+  </li>
+);
 
 const Grocerylist: NextPage = () => {
-  const [items, setItems] = useState<ItemGroceryList[]>([]);
-  const [newItemName, setNewItemName] = useState('');
-  const [isAnyItemCompleted, setIsAnyItemCompleted] = useState(false);
-  const [mealFilters, setMealFilters] = useState<MealFilterState>({});
-  const [completedItems, setCompletedItems] = useState<CompletedItemsState>({});
-  const { data, isLoading, refetch } = api.groceryList.getAllOpen.useQuery();
+  const utils = api.useContext();
+  const [newItemName, setNewItemName] = useState("");
+  const [newItemCategory, setNewItemCategory] = useState<string>(DEFAULT_CATEGORY);
+  const [mealFilters, setMealFilters] = useState<MealFilters>({});
+  const [migrated, setMigrated] = useState(false);
 
+  const { data, isLoading, isError, refetch } = api.groceryList.getAll.useQuery();
+
+  // Persisted per-device: which meals' items are shown.
   useEffect(() => {
-    const savedFilters = localStorage.getItem('mealFilters');
-    if (savedFilters) {
-      try {
-        const parsed = JSON.parse(savedFilters) as MealFilterState;
-        if (typeof parsed === 'object' && parsed !== null) {
-          const isValid = Object.entries(parsed).every(
-            ([key, value]) => typeof key === 'string' && typeof value === 'boolean'
-          );
-          if (isValid) {
-            setMealFilters(parsed);
-          }
-        }
-      } catch (e) {
-        console.error('Failed to parse meal filters from localStorage');
+    try {
+      const saved = localStorage.getItem(FILTERS_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved) as unknown;
+        if (parsed && typeof parsed === "object") setMealFilters(parsed as MealFilters);
       }
+    } catch {
+      // ignore
     }
   }, []);
 
   useEffect(() => {
-    const savedCompletedItems = localStorage.getItem('completedGroceryItems');
-    if (savedCompletedItems) {
-      try {
-        const parsed = JSON.parse(savedCompletedItems) as CompletedItemsState;
-        if (typeof parsed === 'object' && parsed !== null) {
-          const isValid = Object.entries(parsed).every(
-            ([key, value]) => typeof key === 'string' && typeof value === 'boolean'
-          );
-          if (isValid) {
-            setCompletedItems(parsed);
-          }
-        }
-      } catch (e) {
-        console.error('Failed to parse completed items from localStorage');
-      }
-    }
-  }, []);
-
-  useEffect(() => {
-    if (Object.keys(mealFilters).length > 0) {
-      localStorage.setItem('mealFilters', JSON.stringify(mealFilters));
-    }
+    if (Object.keys(mealFilters).length > 0) localStorage.setItem(FILTERS_KEY, JSON.stringify(mealFilters));
   }, [mealFilters]);
 
+  const setManyCompleted = api.groceryList.setManyCompleted.useMutation();
+
+  // One-off migration: check-offs used to live only in localStorage. Move them
+  // into the DB so both phones share the state, then drop the old key.
   useEffect(() => {
-    if (data) {
-      const itemsWithCompletedStates = data.map(item => ({
-        ...item,
-        completed: completedItems[item.id] ?? false
-      }));
-      setItems(itemsWithCompletedStates);
-      
-      const uniqueMeals = [...new Set(data
-        .filter(item => item.reference !== 'Manuell')
-        .map(item => item.reference))];
-      
-      setMealFilters(prev => {
-        const newFilters = { ...prev };
-        uniqueMeals.forEach(meal => {
-          if (newFilters[meal] === undefined) {
-            newFilters[meal] = true;
-          }
-        });
-        return newFilters;
-      });
-    }
-  }, [data, completedItems]);
-
-  useEffect(() => {
-    const anyCompleted = items.some(item => completedItems[item.id]);
-    setIsAnyItemCompleted(anyCompleted);
-  }, [items, completedItems]);
-
-  const { mutate: deleting } = api.groceryList.delete.useMutation({
-    onError: (e) => {
-      const errorMessage = e.data?.zodError?.fieldErrors.content;
-      if (errorMessage?.[0]) {
-        toast.error(errorMessage[0]);
-      } else {
-        toast.error("Fehler");
+    if (!data || migrated) return;
+    setMigrated(true);
+    try {
+      const raw = localStorage.getItem(LEGACY_COMPLETED_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as Record<string, boolean>;
+      const ids = Object.entries(parsed)
+        .filter(([id, done]) => done && data.some((item) => item.id === id && !item.completed))
+        .map(([id]) => id);
+      localStorage.removeItem(LEGACY_COMPLETED_KEY);
+      if (ids.length > 0) {
+        setManyCompleted.mutate({ ids, completed: true }, { onSuccess: () => void utils.groceryList.getAll.invalidate() });
       }
-    },
-  });
-
-  const { mutate: creating } = api.groceryList.create.useMutation({
-    onSuccess: () => {
-      toast.success("Item hinzugefügt!");
-      void refetch();
-    },
-    onError: (e) => {
-      const errorMessage = e.data?.zodError?.fieldErrors.content;
-      if (errorMessage?.[0]) {
-        toast.error(errorMessage[0]);
-      } else {
-        toast.error("Failed to add meal! Please try again later.");
-      }
-    },
-  });
-
-  const { mutate: deletingMany } = api.groceryList.deleteMany.useMutation({
-    onSuccess: () => {
-      toast.success("Erledigte Items gelöscht!");
-      void refetch();
-    },
-    onError: () => {
-      toast.error("Fehler beim Löschen");
-      void refetch();
-    },
-  });
-
-  const handleRemove = (id: string) => {
-    const newCompletedItems = { ...completedItems };
-    delete newCompletedItems[id];
-    localStorage.setItem('completedGroceryItems', JSON.stringify(newCompletedItems));
-    setCompletedItems(newCompletedItems);
-
-    deleting({ id }, {
-      onSuccess: () => void refetch(),
-    });
-  };
-
-  const handleCheck = (id: string) => {
-    setCompletedItems(prev => {
-      const newState = { ...prev, [id]: !prev[id] };
-      localStorage.setItem('completedGroceryItems', JSON.stringify(newState));
-      return newState;
-    });
-  };
-
-  const handleDeleteAll = () => {
-    const completedItemIds = items
-      .filter(item => completedItems[item.id])
-      .map(item => item.id);
-
-    if (completedItemIds.length === 0) return;
-
-    const newCompletedItems = { ...completedItems };
-    completedItemIds.forEach(id => {
-      delete newCompletedItems[id];
-    });
-    localStorage.setItem('completedGroceryItems', JSON.stringify(newCompletedItems));
-    setCompletedItems(newCompletedItems);
-
-    deletingMany({ ids: completedItemIds });
-  };
-
-  const toggleMealFilter = (meal: string) => {
-    setMealFilters(prev => ({
-      ...prev,
-      [meal]: !prev[meal]
-    }));
-  };
-
-  const refreshData = () => {
-    void refetch();
-    toast.success("Liste aktualisiert!");
-  };
-
-  if (isLoading) return <Loading />;
-
-  const filteredItems = items.filter(item => 
-    item.reference === 'Manuell' || mealFilters[item.reference]
-  );
-
-  const processedItems: ItemGroceryList[] = filteredItems.map(item => ({
-    ...item,
-    // Clean up category - remove the "ingredientX:" prefix if it exists
-    category: item.category.includes(':') ? 
-      (item.category.split(':')[1] ?? 'Sonstiges') : 
-      (item.category ?? 'Sonstiges')
-  }));
-
-  const sortedItems = [...processedItems].sort((a, b) => {
-    const categoryA = a.category ?? 'Sonstiges';
-    const categoryB = b.category ?? 'Sonstiges';
-    const categoryIndexA = categoryOrder.indexOf(categoryA);
-    const categoryIndexB = categoryOrder.indexOf(categoryB);
-    
-    if (categoryIndexA !== categoryIndexB) {
-      return categoryIndexA - categoryIndexB;
+    } catch {
+      localStorage.removeItem(LEGACY_COMPLETED_KEY);
     }
-    
-    return a.name.localeCompare(b.name);
+  }, [data, migrated, setManyCompleted, utils]);
+
+  const setCompleted = api.groceryList.setCompleted.useMutation({
+    // Optimistic toggle so the checkbox reacts instantly.
+    onMutate: async ({ id, completed }) => {
+      await utils.groceryList.getAll.cancel();
+      const previous = utils.groceryList.getAll.getData();
+      utils.groceryList.getAll.setData(undefined, (old) => old?.map((i) => (i.id === id ? { ...i, completed } : i)));
+      return { previous };
+    },
+    onError: (_e, _v, ctx) => {
+      utils.groceryList.getAll.setData(undefined, ctx?.previous);
+      toast.error("Konnte nicht speichern");
+    },
+    onSettled: () => void utils.groceryList.getAll.invalidate(),
   });
 
-  const uniqueMeals = [...new Set(items
-    .filter(item => item.reference !== 'Manuell')
-    .map(item => item.reference))];
+  const remove = api.groceryList.delete.useMutation({
+    onMutate: async ({ id }) => {
+      await utils.groceryList.getAll.cancel();
+      const previous = utils.groceryList.getAll.getData();
+      utils.groceryList.getAll.setData(undefined, (old) => old?.filter((i) => i.id !== id));
+      return { previous };
+    },
+    onError: (_e, _v, ctx) => {
+      utils.groceryList.getAll.setData(undefined, ctx?.previous);
+      toast.error("Konnte nicht löschen");
+    },
+    onSettled: () => void utils.groceryList.getAll.invalidate(),
+  });
+
+  const create = api.groceryList.create.useMutation({
+    onSuccess: () => {
+      void utils.groceryList.getAll.invalidate();
+    },
+    onError: (e) => toast.error(e.message || "Konnte nicht hinzufügen"),
+  });
+
+  const deleteCompleted = api.groceryList.deleteCompleted.useMutation({
+    onSuccess: (res) => {
+      toast.success(`${res.count} erledigte ${res.count === 1 ? "Item" : "Items"} gelöscht`);
+      void utils.groceryList.getAll.invalidate();
+    },
+    onError: () => toast.error("Fehler beim Löschen"),
+  });
+
+  const items = useMemo(() => sortByCategory(data ?? []), [data]);
+  const meals = useMemo(() => [...new Set(items.filter((i) => i.reference !== MANUAL).map((i) => i.reference))], [items]);
+  const isVisible = (item: Item) => item.reference === MANUAL || mealFilters[item.reference] !== false;
+  const visible = items.filter(isVisible);
+  const completedCount = items.filter((i) => i.completed).length;
+  const openCount = visible.filter((i) => !i.completed).length;
+
+  const groups = useMemo(() => {
+    const map = new Map<string, Item[]>();
+    for (const item of visible) {
+      const cat = (groceryCategories as readonly string[]).includes(item.category) ? item.category : DEFAULT_CATEGORY;
+      (map.get(cat) ?? map.set(cat, []).get(cat))!.push(item);
+    }
+    return [...map.entries()];
+  }, [visible]);
+
+  const handleAdd = (e: React.FormEvent) => {
+    e.preventDefault();
+    const name = newItemName.trim();
+    if (!name) return;
+    create.mutate({
+      name,
+      usageDate: todayKey(),
+      reference: MANUAL,
+      category: (groceryCategories as readonly string[]).includes(newItemCategory)
+        ? (newItemCategory as (typeof groceryCategories)[number])
+        : DEFAULT_CATEGORY,
+    });
+    setNewItemName("");
+  };
 
   return (
-    <div className="flex flex-col items-center p-4 min-h-screen bg-primary-400">
-      <div className="sticky top-0 z-10 flex justify-between items-center bg-primary-400 py-4 px-2 w-full max-w-md">
-        <div className="flex items-center gap-3">
-          <FiShoppingCart className="text-2xl text-white" />
-          <h1 className="text-3xl font-bold text-white">Einkaufsliste</h1>
-        </div>
+    <PageShell
+      title="Einkaufsliste"
+      activePage="grocerylist"
+      actions={
         <button
-          className="p-2 text-white hover:text-primary-100 transition-colors"
-          onClick={refreshData}
+          className="btn-icon"
+          onClick={() => {
+            void refetch();
+            toast.success("Aktualisiert");
+          }}
+          aria-label="Aktualisieren"
         >
-          <FiRefreshCcw className="text-2xl" />
+          <LuRefreshCw className="text-xl" />
         </button>
-      </div>
-
-      <div className="w-full max-w-md space-y-6">
-        <form 
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (!newItemName.trim()) return;
-            
-            void creating({
-              name: newItemName,
-              completed: false,
-              usageDate: new Date().toISOString().slice(0, 10),
-              reference: 'Manuell',
-              category: 'Sonstiges',
-            });
-            setNewItemName('');
-          }} 
-          className="flex gap-2 mt-4"
-        >
+      }
+    >
+      <form onSubmit={handleAdd} className="card mb-4 space-y-2">
+        <div className="flex gap-2">
           <input
-            type="text"
+            className="input"
             value={newItemName}
             onChange={(e) => setNewItemName(e.target.value)}
             placeholder="Neues Item"
-            className="flex-grow p-3 rounded-lg bg-primary-300 text-white placeholder-gray-400 border border-gray-600 focus:border-primary-100 focus:outline-none"
+            autoComplete="off"
+            enterKeyHint="done"
           />
-          <button
-            type="submit"
-            disabled={!newItemName.trim()}
-            className={`p-3 rounded-lg transition-colors ${
-              !newItemName.trim()
-                ? 'bg-gray-600 cursor-not-allowed'
-                : 'bg-primary-100 hover:bg-primary-200'
-            }`}
-          >
-            <FiPlus className="text-white text-xl" />
+          <button type="submit" className="btn btn-primary shrink-0 px-4" disabled={!newItemName.trim() || create.isLoading} aria-label="Hinzufügen">
+            <FiPlus className="text-xl" />
           </button>
-        </form>
+        </div>
+        <select className="input py-2 text-sm" value={newItemCategory} onChange={(e) => setNewItemCategory(e.target.value)} aria-label="Kategorie">
+          {groceryCategories.map((c) => (
+            <option key={c} value={c}>
+              {c}
+            </option>
+          ))}
+        </select>
+      </form>
 
-        {uniqueMeals.length > 0 && (
-          <div className="overflow-x-auto">
-            <div className="flex gap-2 pb-2">
-              {uniqueMeals.map((meal) => (
+      {meals.length > 0 && (
+        <div className="hide-scrollbar -mx-4 mb-4 overflow-x-auto px-4">
+          <div className="flex gap-2">
+            {meals.map((meal) => {
+              const on = mealFilters[meal] !== false;
+              return (
                 <button
                   key={meal}
-                  onClick={() => toggleMealFilter(meal)}
-                  className={`px-4 py-2 rounded-lg whitespace-nowrap transition-colors ${
-                    mealFilters[meal]
-                      ? 'bg-primary-100 text-white'
-                      : 'bg-primary-300 text-gray-300'
-                  }`}
+                  type="button"
+                  className={`chip ${on ? "chip-active" : ""}`}
+                  onClick={() => setMealFilters((prev) => ({ ...prev, [meal]: !on }))}
                 >
                   {meal}
                 </button>
-              ))}
-            </div>
+              );
+            })}
           </div>
-        )}
-
-        <div className="space-y-3">
-          {sortedItems.map((item, index) => {
-            const prevItem = sortedItems[index - 1];
-            
-            return (
-              <div key={item.id}>
-                {index > 0 && item.category !== prevItem?.category && (
-                  <hr className="border-t border-gray-600 my-4" />
-                )}
-                <GroceryListItem
-                  item={item}
-                  onCheck={(id) => handleCheck(id)}
-                  onRemove={(id) => handleRemove(id)}
-                  isCompleted={completedItems[item.id] ?? false}
-                />
-              </div>
-            );
-          })}
         </div>
+      )}
 
-        {isAnyItemCompleted && (
-          <button
-            className="w-full p-3 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors"
-            onClick={handleDeleteAll}
-          >
-            Erledigte Items löschen
-          </button>
-        )}
-      </div>
+      {isLoading ? (
+        <Loading />
+      ) : isError ? (
+        <ErrorState onRetry={() => void refetch()} />
+      ) : visible.length === 0 ? (
+        <EmptyState
+          title="Die Einkaufsliste ist leer"
+          hint={items.length > 0 ? "Alle Mahlzeiten sind ausgeblendet." : "Plane eine Mahlzeit im Kalender oder füge Items manuell hinzu."}
+        />
+      ) : (
+        <div className="space-y-5">
+          <p className="px-1 text-xs text-muted">
+            {openCount} offen · {completedCount} erledigt
+          </p>
+          {groups.map(([category, groupItems]) => (
+            <section key={category}>
+              <h2 className="mb-2 px-1 text-xs font-semibold tracking-wide text-muted uppercase">{category}</h2>
+              <ul className="space-y-1.5">
+                {groupItems.map((item) => (
+                  <GroceryItem
+                    key={item.id}
+                    item={item}
+                    onToggle={() => setCompleted.mutate({ id: item.id, completed: !item.completed })}
+                    onRemove={() => remove.mutate({ id: item.id })}
+                  />
+                ))}
+              </ul>
+            </section>
+          ))}
+        </div>
+      )}
 
-      <div className="h-16" />
-      <BottomNavBar activePage='grocerylist' />
-    </div>
+      {completedCount > 0 && (
+        <button className="btn btn-danger mt-6 w-full" disabled={deleteCompleted.isLoading} onClick={() => deleteCompleted.mutate()}>
+          <FiTrash2 /> {completedCount} erledigte {completedCount === 1 ? "Item" : "Items"} löschen
+        </button>
+      )}
+    </PageShell>
   );
 };
 

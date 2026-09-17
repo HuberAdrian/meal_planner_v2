@@ -1,94 +1,52 @@
 import { z } from "zod";
 import { createTRPCRouter, publicProcedure } from "../trpc";
+import { MAX_INGREDIENTS, ingredientsToSlots, mealTypes } from "~/lib/meals";
 
-const mealTypes = [
-  "Nudelgerichte",
-  "Kartoffelgerichte",
-  "Reisgerichte",
-  "andere Hauptgerichte",
-  "Backen",
-  "Frühstück",
-  "Snacks",
-  "Salate",
-  "Suppen",
-] as const;
+const ingredientInput = z.object({
+  name: z.string().max(200),
+  // Unknown categories are dropped by ingredientsToSlots.
+  category: z.string().max(100),
+});
+
+const mealInput = z.object({
+  name: z.string().trim().min(1, "Name fehlt").max(200),
+  description: z.string().max(5000).optional().nullable(),
+  type: z.enum(mealTypes),
+  ingredients: z.array(ingredientInput).max(MAX_INGREDIENTS),
+});
+
+function toData(input: z.infer<typeof mealInput>) {
+  const { columns, categories } = ingredientsToSlots(input.ingredients);
+  const description = input.description?.trim();
+  return {
+    name: input.name.trim(),
+    description: description ? description : null,
+    type: input.type,
+    categories,
+    ...columns,
+  };
+}
 
 export const mealRouter = createTRPCRouter({
   getAll: publicProcedure.query(async ({ ctx }) => {
-    return ctx.prisma.meal.findMany({
-      orderBy: { createdAt: "desc" },
-    });
+    const meals = await ctx.prisma.meal.findMany();
+    return meals.sort((a, b) => a.name.localeCompare(b.name, "de"));
   }),
 
-  create: publicProcedure
-    .input(
-      z.object({
-        name: z.string(),
-        description: z.string().optional(),
-        ingredients: z.array(z.string()),
-        categories: z.array(z.string()),
-        type: z.enum(mealTypes),  // Add type validation
-      })
-    )
-    .mutation(async ({ ctx, input }) => {
-      const ingredients: Record<string, string | null> = {};
-      input.ingredients.forEach((ingredient, index) => {
-        if (ingredient) {
-          ingredients[`ingredient${index + 1}`] = ingredient;
-        }
-      });
-
-      return ctx.prisma.meal.create({
-        data: {
-          name: input.name,
-          description: input.description,
-          categories: input.categories,
-          type: input.type,  // Add type to creation
-          ...ingredients,
-        },
-      });
-    }),
+  create: publicProcedure.input(mealInput).mutation(({ ctx, input }) => {
+    return ctx.prisma.meal.create({ data: toData(input) });
+  }),
 
   update: publicProcedure
-    .input(
-      z.object({
-        id: z.string(),
-        name: z.string(),
-        description: z.string().nullable(),
-        ingredient1: z.string().nullable(),
-        ingredient2: z.string().nullable(),
-        ingredient3: z.string().nullable(),
-        ingredient4: z.string().nullable(),
-        ingredient5: z.string().nullable(),
-        ingredient6: z.string().nullable(),
-        ingredient7: z.string().nullable(),
-        ingredient8: z.string().nullable(),
-        ingredient9: z.string().nullable(),
-        ingredient10: z.string().nullable(),
-        ingredient11: z.string().nullable(),
-        ingredient12: z.string().nullable(),
-        ingredient13: z.string().nullable(),
-        ingredient14: z.string().nullable(),
-        ingredient15: z.string().nullable(),
-        categories: z.array(z.string()),
-        type: z.enum(mealTypes),  // Add type validation
-      })
-    )
-    .mutation(async ({ ctx, input }) => {
-      const { id, ...data } = input;
-      return ctx.prisma.meal.update({
-        where: { id },
-        data,
-      });
+    .input(mealInput.extend({ id: z.string() }))
+    .mutation(({ ctx, input }) => {
+      const { id, ...rest } = input;
+      return ctx.prisma.meal.update({ where: { id }, data: toData(rest) });
     }),
 
   delete: publicProcedure
     .input(z.object({ id: z.string() }))
-    .mutation(async ({ ctx, input }) => {
-      return ctx.prisma.meal.delete({
-        where: { id: input.id },
-      });
+    .mutation(({ ctx, input }) => {
+      return ctx.prisma.meal.delete({ where: { id: input.id } });
     }),
 });
-
-

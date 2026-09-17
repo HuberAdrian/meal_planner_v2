@@ -1,76 +1,57 @@
-"use client";
-import { useState } from 'react';
-import { NextPage } from "next";
-import { FaArrowLeft, FaArrowRight } from 'react-icons/fa';
-import BottomNavBar from '~/components/BottomNavBar';
-import Link from 'next/link';
+import { type NextPage } from "next";
+import { useState, type FC } from "react";
+import PageShell from "~/components/layout/PageShell";
+import { EmptyState, ErrorState, Loading } from "~/components/loading";
+import { MonthNav, StatsSubnav } from "~/components/StatsSubnav";
 import { api } from "~/utils/api";
-import { Loading } from '~/components/loading';
-import { GoArrowSwitch } from "react-icons/go";
 
-
-type Meal = {
-  id: string;
-  name: string;
-  timesEaten: number;
-};
-
-const HistoryMonth: React.FC<{date: Date}> = ({ date }) => {
-  const { data, error, isLoading } = api.post.getOneMonth.useQuery({ date });
+const HistoryMonth: FC<{ date: Date }> = ({ date }) => {
+  const { data, error, isLoading, refetch } = api.post.getOneMonth.useQuery({ year: date.getFullYear(), month: date.getMonth() });
 
   if (isLoading) return <Loading />;
-  if (error) return <div>Error loading data</div>;
-  if (!data || data.length === 0) return <div>No data available for this month</div>;
+  if (error) return <ErrorState onRetry={() => void refetch()} />;
+  if (!data || data.length === 0) return <EmptyState title="Keine Mahlzeiten in diesem Monat" />;
+
+  const max = Math.max(...data.map((m) => m.timesEaten));
+  const total = data.reduce((sum, m) => sum + m.timesEaten, 0);
 
   return (
-    <div className="w-full max-w-md">
-      {data.map((meal, index) => (
-        <div key={index} className="flex items-center mb-2">
-          <div className="w-1/4 pr-2">{meal.name}</div>
-          <div className="w-3/4 bg-gray-200">
-            <div 
-              className="bg-blue-500 transition-width duration-500 ease-in-out" 
-              style={{ width: `${meal.timesEaten * 10}%`, height: '20px' }} 
-            />
-          </div>
-        </div>
-      ))}
+    <div className="card">
+      <p className="mb-4 text-sm text-muted">
+        {total} Mahlzeiten · {data.length} verschiedene
+      </p>
+      <ul className="space-y-3">
+        {data.map((meal) => (
+          <li key={meal.id}>
+            <div className="mb-1 flex items-baseline justify-between gap-3 text-sm">
+              <span className="truncate text-gray-100">{meal.name}</span>
+              <span className="shrink-0 font-semibold text-primary-100">{meal.timesEaten}×</span>
+            </div>
+            <div className="h-2 overflow-hidden rounded-full bg-surface-3">
+              <div
+                className="h-full rounded-full bg-primary-100 transition-[width] duration-500"
+                style={{ width: `${(meal.timesEaten / max) * 100}%` }}
+              />
+            </div>
+          </li>
+        ))}
+      </ul>
     </div>
   );
-}
+};
 
 const History: NextPage = () => {
-  const [date, setDate] = useState<Date>(new Date());
-
-  const handlePreviousMonth = () => {
-    setDate(new Date(date.getFullYear(), date.getMonth() - 1));
-  };
-
-  const handleNextMonth = () => {
-    setDate(new Date(date.getFullYear(), date.getMonth() + 1));
-  };
+  const [date, setDate] = useState<Date>(() => {
+    const d = new Date();
+    return new Date(d.getFullYear(), d.getMonth(), 1);
+  });
 
   return (
-    <div className="flex flex-col items-center p-4 min-h-screen bg-primary-400">
-      <div className="sticky top-0 z-10 flex justify-between items-center bg-primary-400 py-4 px-2 w-full max-w-md">
-        <h1 className="text-3xl font-bold text-white">Mahlzeiten Historie</h1>
-        <Link href="/expenses" className="p-2 bg-blue-500 text-white rounded">
-            <GoArrowSwitch className="text-2xl" />
-        </Link>
-      </div>
-      <div className="flex justify-between items-center w-full max-w-md mb-4 border p-4 rounded-lg">
-        <button onClick={handlePreviousMonth}>
-          <FaArrowLeft />
-        </button>
-        <h2>{`${date.toLocaleString('default', { month: 'long' })} ${date.getFullYear()}`}</h2>
-        <button onClick={handleNextMonth}>
-          <FaArrowRight />
-        </button>
-      </div>
+    <PageShell title="Mahlzeiten" heading="Statistik" activePage="stats" subheader={<StatsSubnav active="meals" />}>
+      <MonthNav date={date} onChange={setDate} />
       <HistoryMonth date={date} />
-      <BottomNavBar activePage='history' />
-    </div>
+    </PageShell>
   );
-}
+};
 
 export default History;

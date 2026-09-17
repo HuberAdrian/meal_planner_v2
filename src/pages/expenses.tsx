@@ -1,301 +1,329 @@
 import type { NextPage } from "next";
-import React, { useState, useEffect, useRef } from 'react';
-import { FaArrowLeft, FaArrowRight } from 'react-icons/fa';
-import BottomNavBar from '~/components/BottomNavBar';
-import Link from 'next/link';
-import { GoArrowSwitch } from "react-icons/go";
-import { api } from "~/utils/api";
+import { useEffect, useMemo, useRef, useState, type FC } from "react";
+import toast from "react-hot-toast";
+import { FiChevronDown, FiChevronUp, FiPlus, FiTrash2, FiX } from "react-icons/fi";
+import PageShell from "~/components/layout/PageShell";
+import { EmptyState, ErrorState, Loading } from "~/components/loading";
+import { MonthNav, StatsSubnav } from "~/components/StatsSubnav";
+import { api, type RouterOutputs } from "~/utils/api";
+import { todayKey, parseDateKey } from "~/lib/dates";
 
-type Expense = {
-  id: string;
-  category: string;
-  amount: number;
-  date: Date;
-  description: string;
+type Expense = RouterOutputs["expense"]["getAll"][number];
+
+const categoryOrder = ["Miete", "Lebensmitteleinkäufe", "Transport", "Fitness", "Einkaufen", "Auto", "Telefon", "Abonnements", "Sonstiges"];
+
+const chartGroups = {
+  Miete: "#f87171",
+  Lebensmitteleinkäufe: "#60a5fa",
+  Sonstiges: "#9ca3af",
+} as const;
+type ChartGroup = keyof typeof chartGroups;
+const toChartGroup = (category: string): ChartGroup => (category in chartGroups ? (category as ChartGroup) : "Sonstiges");
+
+type MonthTotals = { key: string; label: string; groups: Record<ChartGroup, number>; total: number };
+
+const monthKey = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+const monthLabel = (key: string) => {
+  const [y, m] = key.split("-").map(Number);
+  return new Date(y ?? 0, (m ?? 1) - 1, 1).toLocaleDateString("de-DE", { month: "short", year: "2-digit" });
 };
 
-type GroupedExpenses = Record<string, Expense[]>;
+const formatCurrency = (amount: number) => new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" }).format(amount);
 
-type MonthlyExpenses = {
-  month: string;
-  expenses: {
-    Miete: number;
-    Lebensmitteleinkäufe: number;
-    Sonstiges: number;
-  };
-  total: number;
-};
+function monthlyTotals(expenses: Expense[]): MonthTotals[] {
+  const map = new Map<string, MonthTotals>();
+  for (const e of expenses) {
+    const key = monthKey(e.date);
+    const entry = map.get(key) ?? { key, label: monthLabel(key), groups: { Miete: 0, Lebensmitteleinkäufe: 0, Sonstiges: 0 }, total: 0 };
+    entry.groups[toChartGroup(e.category)] += e.amount;
+    entry.total += e.amount;
+    map.set(key, entry);
+  }
+  return [...map.values()].sort((a, b) => a.key.localeCompare(b.key));
+}
 
-const categoryOrder = [
-  "Miete",
-  "Lebensmitteleinkäufe",
-  "Transport",
-  "Fitness",
-  "Einkaufen",
-  "Auto",
-  "Telefon",
-  "Abonnements",
-  "Sonstiges",
-];
+const ExpenseChart: FC<{ months: MonthTotals[]; currentKey: string }> = ({ months, currentKey }) => {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const displayed = useMemo(() => {
+    const idx = months.findIndex((m) => m.key === currentKey);
+    const end = idx === -1 ? months.length : idx + 1;
+    return months.slice(Math.max(0, end - 4), end);
+  }, [months, currentKey]);
+  const average = displayed.length ? displayed.reduce((s, m) => s + m.total, 0) / displayed.length : 0;
 
-const categoryColors: Record<string, string> = {
-  "Miete": "#FF9999",
-  "Lebensmitteleinkäufe": "#66B2FF",
-  "Sonstiges": "#CCCCCC",
-};
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas || displayed.length === 0) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    ctx.scale(dpr, dpr);
+    ctx.clearRect(0, 0, rect.width, rect.height);
 
-const formatCurrency = (amount: number) => {
-  return new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(amount);
-};
+    const top = 28;
+    const bottom = rect.height - 40;
+    const plotHeight = bottom - top;
+    const slot = rect.width / displayed.length;
+    const barWidth = Math.min(64, slot * 0.55);
+    const max = Math.max(...displayed.map((m) => m.total), 1);
 
-const groupExpensesByCategory = (expenses: Expense[]): GroupedExpenses => {
-  return expenses.reduce((acc, expense) => {
-    if (!acc[expense.category]) {
-      acc[expense.category] = [];
-    }
-    acc[expense.category]!.push(expense);
-    return acc;
-  }, {} as GroupedExpenses);
-};
+    displayed.forEach((month, i) => {
+      const x = i * slot + (slot - barWidth) / 2;
+      let y = bottom;
+      (Object.keys(chartGroups) as ChartGroup[]).forEach((group) => {
+        const h = (month.groups[group] / max) * plotHeight;
+        ctx.fillStyle = chartGroups[group];
+        ctx.fillRect(x, y - h, barWidth, h);
+        y -= h;
+      });
+      ctx.fillStyle = month.key === currentKey ? "#ffffff" : "#9ca3af";
+      ctx.font = `${month.key === currentKey ? "bold " : ""}12px system-ui, sans-serif`;
+      ctx.textAlign = "center";
+      ctx.fillText(month.label, x + barWidth / 2, rect.height - 22);
+      ctx.fillText(formatCurrency(month.total), x + barWidth / 2, rect.height - 6);
+    });
 
-const calculateMonthlyExpenses = (expenses: Expense[]): MonthlyExpenses[] => {
-  const monthlyExpenses: Record<string, MonthlyExpenses> = {};
+    const avgY = bottom - (average / max) * plotHeight;
+    ctx.strokeStyle = "#facc15";
+    ctx.setLineDash([4, 4]);
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(0, avgY);
+    ctx.lineTo(rect.width, avgY);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = "#facc15";
+    ctx.font = "11px system-ui, sans-serif";
+    ctx.textAlign = "right";
+    ctx.fillText(`Ø ${formatCurrency(average)}`, rect.width - 4, avgY - 6);
+  }, [displayed, currentKey, average]);
 
-  expenses.forEach((expense) => {
-    const monthYear = expense.date.toLocaleString('default', { month: 'short', year: 'numeric' });
-    if (!monthlyExpenses[monthYear]) {
-      monthlyExpenses[monthYear] = { 
-        month: monthYear, 
-        expenses: { Miete: 0, Lebensmitteleinkäufe: 0, Sonstiges: 0 },
-        total: 0 
-      };
-    }
-    
-    if (expense.category === "Miete") {
-      monthlyExpenses[monthYear]!.expenses.Miete += expense.amount;
-    } else if (expense.category === "Lebensmitteleinkäufe") {
-      monthlyExpenses[monthYear]!.expenses.Lebensmitteleinkäufe += expense.amount;
-    } else {
-      monthlyExpenses[monthYear]!.expenses.Sonstiges += expense.amount;
-    }
-    
-    monthlyExpenses[monthYear]!.total += expense.amount;
-  });
-
-  return Object.entries(monthlyExpenses)
-    .sort(([a], [b]) => new Date(a).getTime() - new Date(b).getTime())
-    .map(([, value]) => value);
-};
-
-const ExpenseCategory: React.FC<{ category: string; expenses: Expense[] }> = ({ category, expenses }) => {
-  const [isExpanded, setIsExpanded] = useState(false);
-  const totalAmount = expenses.reduce((sum, expense) => sum + expense.amount, 0);
+  if (displayed.length === 0) return null;
 
   return (
-    <div className="mb-4 border-b border-gray-600 pb-2">
-      <div 
-        className="flex justify-between items-center cursor-pointer" 
-        onClick={() => setIsExpanded(!isExpanded)}
-      >
-        <span>{category}</span>
-        <span>{formatCurrency(totalAmount)}</span>
+    <div className="card mb-4">
+      <div style={{ height: 240 }}>
+        <canvas ref={canvasRef} style={{ width: "100%", height: "100%" }} />
       </div>
-      {isExpanded && (
-        <div className="mt-2 pl-4">
-          {expenses.map((expense) => (
-            <div key={expense.id} className="flex justify-between text-sm text-gray-300">
-              <span>{new Date(expense.date).toLocaleDateString()}</span>
-              <span>{expense.description}</span>
-              <span>{formatCurrency(expense.amount)}</span>
-            </div>
+      <div className="mt-2 flex flex-wrap gap-3 text-xs text-muted">
+        {(Object.keys(chartGroups) as ChartGroup[]).map((g) => (
+          <span key={g} className="flex items-center gap-1.5">
+            <span className="h-2.5 w-2.5 rounded-sm" style={{ background: chartGroups[g] }} />
+            {g === "Sonstiges" ? "Alles andere" : g}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+const CategoryRow: FC<{ category: string; expenses: Expense[]; onDelete: (e: Expense) => void }> = ({ category, expenses, onDelete }) => {
+  const [open, setOpen] = useState(false);
+  const total = expenses.reduce((s, e) => s + e.amount, 0);
+  return (
+    <div className="border-b border-line last:border-b-0">
+      <button type="button" className="flex w-full items-center justify-between py-3 text-left" onClick={() => setOpen(!open)}>
+        <span className="flex items-center gap-2 font-medium">
+          {open ? <FiChevronUp className="text-muted" /> : <FiChevronDown className="text-muted" />}
+          {category}
+          <span className="text-xs text-muted">({expenses.length})</span>
+        </span>
+        <span className="font-semibold">{formatCurrency(total)}</span>
+      </button>
+      {open && (
+        <ul className="mb-3 space-y-1 pl-6">
+          {expenses.map((e) => (
+            <li key={e.id} className="flex items-center gap-2 text-sm text-gray-300">
+              <span className="w-14 shrink-0 text-muted">{e.date.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit" })}</span>
+              <span className="min-w-0 flex-1 truncate">{e.description || "–"}</span>
+              <span className="shrink-0">{formatCurrency(e.amount)}</span>
+              <button className="btn-icon h-7 w-7 text-muted hover:text-red-300" onClick={() => onDelete(e)} aria-label="Löschen">
+                <FiTrash2 className="text-sm" />
+              </button>
+            </li>
           ))}
-        </div>
+        </ul>
       )}
     </div>
   );
 };
 
-const ExpenseChart: React.FC<{ data: MonthlyExpenses[], currentMonth: string }> = ({ data, currentMonth }) => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+const AddExpenseSheet: FC<{ defaultDate: Date; onClose: () => void }> = ({ defaultDate, onClose }) => {
+  const utils = api.useContext();
+  const [category, setCategory] = useState("Lebensmitteleinkäufe");
+  const [amount, setAmount] = useState("");
+  const [date, setDate] = useState(() => {
+    const today = new Date();
+    const sameMonth = today.getFullYear() === defaultDate.getFullYear() && today.getMonth() === defaultDate.getMonth();
+    return sameMonth ? todayKey() : `${defaultDate.getFullYear()}-${String(defaultDate.getMonth() + 1).padStart(2, "0")}-01`;
+  });
+  const [description, setDescription] = useState("");
 
-  // Find the index of the current month
-  const currentMonthIndex = data.findIndex(m => m.month === currentMonth);
-  
-  // Calculate the start index to always show 4 months, with current month as the rightmost
-  // unless we're near the start of the data
-  const startIndex = Math.max(0, currentMonthIndex - 3);
-  const displayedData = data.slice(startIndex, startIndex + 4).reverse();
+  const { mutate, isLoading } = api.expense.create.useMutation({
+    onSuccess: () => {
+      toast.success("Ausgabe gespeichert");
+      void utils.expense.getAll.invalidate();
+      onClose();
+    },
+    onError: (e) => toast.error(e.message || "Fehler beim Speichern"),
+  });
 
-  useEffect(() => {
-    if (canvasRef.current) {
-      const ctx = canvasRef.current.getContext('2d');
-      if (ctx) {
-        const dpr = window.devicePixelRatio ?? 1;
-        const rect = canvasRef.current.getBoundingClientRect();
-        canvasRef.current.width = rect.width * dpr;
-        canvasRef.current.height = rect.height * dpr;
-        ctx.scale(dpr, dpr);
-
-        const barWidth = rect.width / (displayedData.length * 2);
-        const chartHeight = rect.height - 60;
-        const chartTopPadding = 20;
-
-        const maxExpense = Math.max(...displayedData.map(m => m.total));
-        
-        // Calculate average only from displayed months
-        const averageExpense = displayedData.reduce((sum, m) => sum + m.total, 0) / displayedData.length;
-
-        ctx.clearRect(0, 0, rect.width, rect.height);
-
-        displayedData.forEach((month, index) => {
-          const x = index * barWidth * 2 + barWidth / 2;
-          let y = chartHeight + chartTopPadding;
-          const barHeight = (month.total / maxExpense) * (chartHeight - chartTopPadding);
-
-          ['Miete', 'Lebensmitteleinkäufe', 'Sonstiges'].forEach((category) => {
-            const categoryAmount = month.expenses[category as keyof typeof month.expenses];
-            const segmentHeight = (categoryAmount / month.total) * barHeight;
-            ctx.fillStyle = categoryColors[category] ?? '#CCCCCC';
-            ctx.fillRect(x, y - segmentHeight, barWidth, segmentHeight);
-            y -= segmentHeight;
-          });
-
-          ctx.fillStyle = 'white';
-          ctx.font = month.month === currentMonth ? 'bold 12px Arial' : '12px Arial';
-          ctx.textAlign = 'center';
-          ctx.fillText(month.month, x + barWidth / 2, rect.height - 20);
-          ctx.fillText(formatCurrency(month.total), x + barWidth / 2, rect.height - 5);
-        });
-
-        // Draw average line
-        ctx.beginPath();
-        ctx.strokeStyle = 'yellow';
-        ctx.lineWidth = 2;
-        const averageY = chartHeight + chartTopPadding - (averageExpense / maxExpense) * (chartHeight - chartTopPadding);
-        ctx.moveTo(0, averageY);
-        ctx.lineTo(rect.width, averageY);
-        ctx.stroke();
-
-        ctx.fillStyle = 'yellow';
-        ctx.font = '12px Arial';
-        ctx.textAlign = 'right';
-        ctx.fillText(`Durchschnitt: ${formatCurrency(averageExpense)}`, rect.width - 10, averageY - 5);
-      }
-    }
-  }, [displayedData, currentMonth]);
-
-  // Calculate and return the current average expense
-  const averageExpense = displayedData.reduce((sum, m) => sum + m.total, 0) / displayedData.length;
+  const parsedAmount = Number(amount.replace(",", "."));
+  const valid = Number.isFinite(parsedAmount) && parsedAmount > 0 && /^\d{4}-\d{2}-\d{2}$/.test(date);
 
   return (
-    <div className="w-full mb-4">
-      <div style={{ height: '300px' }}>
-        <canvas ref={canvasRef} style={{ width: '100%', height: '100%' }} />
-      </div>
-      <div className="hidden">{averageExpense}</div>
+    <div className="sheet-backdrop" onClick={onClose}>
+      <form
+        className="sheet space-y-4"
+        onClick={(e) => e.stopPropagation()}
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (!valid) return;
+          mutate({ category, amount: Math.round(parsedAmount * 100) / 100, date: parseDateKey(date), description: description.trim() });
+        }}
+      >
+        <div className="flex items-center justify-between">
+          <h2 className="text-xl font-bold">Ausgabe hinzufügen</h2>
+          <button type="button" className="btn-icon -mr-2" onClick={onClose} aria-label="Schließen">
+            <FiX className="text-xl" />
+          </button>
+        </div>
+        <div>
+          <label className="label" htmlFor="exp-amount">
+            Betrag (€)
+          </label>
+          <input id="exp-amount" className="input" inputMode="decimal" placeholder="0,00" value={amount} onChange={(e) => setAmount(e.target.value)} autoFocus />
+        </div>
+        <div>
+          <label className="label" htmlFor="exp-cat">
+            Kategorie
+          </label>
+          <select id="exp-cat" className="input" value={category} onChange={(e) => setCategory(e.target.value)}>
+            {categoryOrder.map((c) => (
+              <option key={c} value={c}>
+                {c}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="label" htmlFor="exp-date">
+            Datum
+          </label>
+          <input id="exp-date" type="date" className="input" value={date} onChange={(e) => e.target.value && setDate(e.target.value)} />
+        </div>
+        <div>
+          <label className="label" htmlFor="exp-desc">
+            Beschreibung
+          </label>
+          <input id="exp-desc" className="input" placeholder="Optional" value={description} onChange={(e) => setDescription(e.target.value)} />
+        </div>
+        <button type="submit" className="btn btn-primary w-full" disabled={!valid || isLoading}>
+          {isLoading ? "Wird gespeichert…" : "Speichern"}
+        </button>
+      </form>
     </div>
   );
 };
 
 const Expenses: NextPage = () => {
-  const [date, setDate] = useState<Date>(new Date());
-  const [chartData, setChartData] = useState<MonthlyExpenses[]>([]);
-  const [averageMonthlyExpenses, setAverageMonthlyExpenses] = useState<number>(0);
+  const utils = api.useContext();
+  const [date, setDate] = useState<Date>(() => {
+    const d = new Date();
+    return new Date(d.getFullYear(), d.getMonth(), 1);
+  });
+  const [initialised, setInitialised] = useState(false);
+  const [adding, setAdding] = useState(false);
+  const { data, isLoading, isError, refetch } = api.expense.getAll.useQuery();
 
-  const { data: expensesData, isLoading } = api.expense.getAll.useQuery();
-
-  // Set initial date to most recent month with data
+  // Jump to the most recent month that has data on first load.
   useEffect(() => {
-    if (expensesData && expensesData.length > 0) {
-      const sortedExpenses = [...expensesData].sort((a, b) => 
-        new Date(b.date).getTime() - new Date(a.date).getTime()
-      );
-      setDate(new Date(sortedExpenses[0]!.date));
-    }
-  }, [expensesData]);
+    if (initialised || !data) return;
+    setInitialised(true);
+    const latest = data[0];
+    if (latest) setDate(new Date(latest.date.getFullYear(), latest.date.getMonth(), 1));
+  }, [data, initialised]);
 
-  // Update chart data and calculate average for currently displayed months
-  useEffect(() => {
-    if (expensesData) {
-      const monthlyExpenses = calculateMonthlyExpenses(expensesData);
-      setChartData(monthlyExpenses);
+  const remove = api.expense.delete.useMutation({
+    onSuccess: () => {
+      toast.success("Ausgabe gelöscht");
+      void utils.expense.getAll.invalidate();
+    },
+    onError: () => toast.error("Fehler beim Löschen"),
+  });
 
-      const currentMonthStr = date.toLocaleString('default', { month: 'short', year: 'numeric' });
-      const currentMonthIndex = monthlyExpenses.findIndex(m => m.month === currentMonthStr);
-      const startIndex = Math.max(0, currentMonthIndex - 3);
-      const displayedMonths = monthlyExpenses.slice(startIndex, startIndex + 4);
-      
-      const average = displayedMonths.reduce((sum, month) => sum + month.total, 0) / displayedMonths.length;
-      setAverageMonthlyExpenses(average);
-    }
-  }, [expensesData, date]);
+  const months = useMemo(() => monthlyTotals(data ?? []), [data]);
+  const currentKey = monthKey(date);
+  const currentExpenses = useMemo(() => (data ?? []).filter((e) => monthKey(e.date) === currentKey), [data, currentKey]);
+  const grouped = useMemo(() => {
+    const map = new Map<string, Expense[]>();
+    for (const e of currentExpenses) (map.get(e.category) ?? map.set(e.category, []).get(e.category))!.push(e);
+    return [...map.entries()].sort(([a], [b]) => {
+      const ia = categoryOrder.indexOf(a);
+      const ib = categoryOrder.indexOf(b);
+      return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
+    });
+  }, [currentExpenses]);
+  const total = currentExpenses.reduce((s, e) => s + e.amount, 0);
 
-  const handlePreviousMonth = () => {
-    setDate(new Date(date.getFullYear(), date.getMonth() - 1));
-  };
-
-  const handleNextMonth = () => {
-    setDate(new Date(date.getFullYear(), date.getMonth() + 1));
-  };
-
-  if (isLoading) return <div>Loading...</div>;
-
-  const currentMonthExpenses = expensesData?.filter(expense => 
-    new Date(expense.date).getMonth() === date.getMonth() &&
-    new Date(expense.date).getFullYear() === date.getFullYear()
-  ) ?? [];
-
-  const groupedExpenses = groupExpensesByCategory(currentMonthExpenses);
-  const sortedCategories = Object.keys(groupedExpenses).sort((a, b) => 
-    categoryOrder.indexOf(a) - categoryOrder.indexOf(b)
-  );
-
-  const totalExpenses = currentMonthExpenses.reduce((sum, expense) => sum + expense.amount, 0);
-
-  const currentMonthName = date.toLocaleString('default', { month: 'short', year: 'numeric' });
-
-  const fireNumber = Math.round(averageMonthlyExpenses * 12 * 25);
+  const displayedForAverage = useMemo(() => {
+    const idx = months.findIndex((m) => m.key === currentKey);
+    const end = idx === -1 ? months.length : idx + 1;
+    return months.slice(Math.max(0, end - 4), end);
+  }, [months, currentKey]);
+  const average = displayedForAverage.length ? displayedForAverage.reduce((s, m) => s + m.total, 0) / displayedForAverage.length : 0;
+  const fireNumber = Math.round(average * 12 * 25);
 
   return (
-    <div className="flex flex-col items-center p-4 min-h-screen bg-primary-400">
-      <div className="sticky top-0 z-10 flex justify-between items-center bg-primary-400 py-4 px-2 w-full max-w-md">
-        <h1 className="text-3xl font-bold text-white">Ausgaben Historie</h1>
-        <Link href="/history" className="p-2 bg-blue-500 text-white rounded">
-          <GoArrowSwitch className="text-2xl" />
-        </Link>
-      </div>
-      <div className="flex justify-between items-center w-full max-w-md mb-4 border p-4 rounded-lg">
-        <button onClick={handlePreviousMonth}>
-          <FaArrowLeft />
+    <PageShell
+      title="Ausgaben"
+      heading="Statistik"
+      activePage="stats"
+      subheader={<StatsSubnav active="expenses" />}
+      actions={
+        <button className="btn btn-primary px-3 py-2" onClick={() => setAdding(true)}>
+          <FiPlus /> Neu
         </button>
-        <h2>{date.toLocaleString('default', { month: 'long', year: 'numeric' })}</h2>
-        <button onClick={handleNextMonth}>
-          <FaArrowRight />
-        </button>
-      </div>
-      <div className="w-full max-w-md mb-4">
-        <p className="text-xl font-bold">Gesamte Ausgaben: {formatCurrency(totalExpenses)}</p>
-      </div>
-      <ExpenseChart data={chartData} currentMonth={currentMonthName} />
-      <div className="w-full max-w-md mb-4">
-        {sortedCategories.map((category) => (
-          <ExpenseCategory key={category} category={category} expenses={groupedExpenses[category]!} />
-        ))}
-      </div>
-      <div className="w-full max-w-md mt-8 mb-4">
-        <div className="border-t border-white my-4"></div>
-        <h3 className="text-xl font-bold mb-2">Lifestyle Calculator</h3>
-        <p>
-          Um diesen Lifestyle aus Anlagen zu finanzieren, benötigt man ein Netto-Vermögen von: <span className="font-bold">{formatCurrency(fireNumber)}</span>.
-        </p>
-        <p className="mt-2 text-gray-300 text-sm">
-          *bei einer inflationsbereinigten Rendite &gt; 7%<br/>
-          **bei einer Entnahme &lt; 4%
-        </p>
-      </div>
-      <div className="h-16"></div>
-      <BottomNavBar activePage='history' />
-    </div>
+      }
+    >
+      <MonthNav date={date} onChange={setDate} />
+      {isLoading ? (
+        <Loading />
+      ) : isError ? (
+        <ErrorState onRetry={() => void refetch()} />
+      ) : (
+        <>
+          <div className="card mb-4 flex items-baseline justify-between">
+            <span className="text-muted">Gesamt</span>
+            <span className="text-2xl font-bold">{formatCurrency(total)}</span>
+          </div>
+          <ExpenseChart months={months} currentKey={currentKey} />
+          {grouped.length === 0 ? (
+            <EmptyState title="Keine Ausgaben in diesem Monat" action={<button className="btn btn-secondary" onClick={() => setAdding(true)}>Ausgabe hinzufügen</button>} />
+          ) : (
+            <div className="card py-1">
+              {grouped.map(([category, expenses]) => (
+                <CategoryRow key={category} category={category} expenses={expenses} onDelete={(e) => remove.mutate({ id: e.id })} />
+              ))}
+            </div>
+          )}
+          {average > 0 && (
+            <div className="card mt-4">
+              <h3 className="mb-1 font-bold">Lifestyle-Rechner</h3>
+              <p className="text-sm text-gray-300">
+                Um diesen Lifestyle aus Anlagen zu finanzieren, braucht es ein Netto-Vermögen von{" "}
+                <span className="font-bold text-white">{formatCurrency(fireNumber)}</span>.
+              </p>
+              <p className="mt-2 text-xs text-muted">Ø der letzten 4 Monate × 12 × 25 (4 %-Regel, inflationsbereinigte Rendite &gt; 7 %).</p>
+            </div>
+          )}
+        </>
+      )}
+      {adding && <AddExpenseSheet defaultDate={date} onClose={() => setAdding(false)} />}
+    </PageShell>
   );
 };
 

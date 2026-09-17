@@ -1,76 +1,48 @@
-import { useRouter } from 'next/router';
-import Link from 'next/link';
-import { GiMeal } from "react-icons/gi";
-import { BsCalendar2Week } from "react-icons/bs";
-import { HiOutlineShoppingCart } from "react-icons/hi";
-import { BsBarChartLineFill } from "react-icons/bs";
-import { FaUser, FaGift } from "react-icons/fa";
+import Link from "next/link";
 import { type FC } from "react";
+import { GiMeal } from "react-icons/gi";
+import { BsCalendar2Week, BsBarChartLineFill } from "react-icons/bs";
+import { HiOutlineShoppingCart } from "react-icons/hi";
+import { FaUser } from "react-icons/fa";
+
+export type NavPage = "meals" | "grocerylist" | "calendar" | "stats" | "user";
 
 interface BottomNavBarProps {
-  activePage: 'addmeal' | 'calendar' | 'grocerylist' | 'user' | 'history' | 'expenses' | 'bonus';
+  activePage: NavPage;
 }
 
-const BottomNavBar: FC<BottomNavBarProps> = ({ activePage }) => {
-  const router = useRouter();
+const items: { page: NavPage; href: string; label: string; Icon: FC<{ className?: string }> }[] = [
+  { page: "meals", href: "/deletemeal", label: "Essen", Icon: GiMeal },
+  { page: "grocerylist", href: "/grocerylist", label: "Einkauf", Icon: HiOutlineShoppingCart },
+  { page: "calendar", href: "/", label: "Kalender", Icon: BsCalendar2Week },
+  { page: "stats", href: "/history", label: "Statistik", Icon: BsBarChartLineFill },
+  { page: "user", href: "/user-profile", label: "Profil", Icon: FaUser },
+];
 
-  const handleMealClick = () => {
-    void router.push('/deletemeal');
-  };
-
-  const handleCalendarClick = () => {
-    void router.push('/');
-  };
-
-  const handleGroceryListClick = () => {
-    void router.push('/grocerylist');
-  };
-
-  const handleHistoryClick = () => {
-    void router.push('/history');
-  };
-
-  const handleBonusClick = () => {
-    void router.push('/bonus');
-  };
-
-  return (
-    <div className="fixed bottom-0 left-0 right-0 h-16 bg-primary-400 flex justify-around items-center border-t border-primary-300">
-      <button 
-        onClick={handleMealClick}
-        className={`p-2 rounded-lg ${activePage === 'addmeal' ? 'text-primary-100' : 'text-white'}`}
-      >
-        <GiMeal className="text-2xl" />
-      </button>
-      <button 
-        onClick={handleGroceryListClick}
-        className={`p-2 rounded-lg ${activePage === 'grocerylist' ? 'text-primary-100' : 'text-white'}`}
-      >
-        <HiOutlineShoppingCart className="text-2xl" />
-      </button>
-      <button 
-        onClick={handleCalendarClick}
-        className={`p-2 rounded-lg ${activePage === 'calendar' ? 'text-primary-100' : 'text-white'}`}
-      >
-        <BsCalendar2Week className="text-2xl" />
-      </button>
-      <button
-        onClick={handleHistoryClick}
-        className={`p-2 rounded-lg ${(activePage === 'history' || activePage === 'expenses') ? 'text-primary-100' : 'text-white'}`}
-      >
-        <BsBarChartLineFill className="text-2xl" />
-      </button>
-      <button
-        onClick={handleBonusClick}
-        className={`p-2 rounded-lg ${activePage === 'bonus' ? 'text-primary-100' : 'text-white'}`}
-      >
-        <FaGift className="text-2xl" />
-      </button>
-      <Link href="/user-profile">
-        <FaUser className={`text-2xl ${activePage === 'user' ? 'text-primary-100' : 'text-white'}`} />
-      </Link>
+const BottomNavBar: FC<BottomNavBarProps> = ({ activePage }) => (
+  <nav
+    className="fixed right-0 bottom-0 left-0 z-20 border-t border-line bg-primary-400/95 backdrop-blur-sm"
+    style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
+  >
+    <div className="mx-auto flex h-16 max-w-md items-stretch justify-around">
+      {items.map(({ page, href, label, Icon }) => {
+        const active = activePage === page;
+        return (
+          <Link
+            key={page}
+            href={href}
+            aria-current={active ? "page" : undefined}
+            className={`flex flex-1 flex-col items-center justify-center gap-1 text-[11px] transition-colors ${
+              active ? "text-primary-100" : "text-muted hover:text-white"
+            }`}
+          >
+            <Icon className="text-2xl" />
+            <span className={active ? "font-semibold" : ""}>{label}</span>
+          </Link>
+        );
+      })}
     </div>
-  );
-};
+  </nav>
+);
 
 export default BottomNavBar;

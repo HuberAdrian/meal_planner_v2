@@ -1,392 +1,298 @@
-"use client"
-import { useState, useEffect } from 'react';
-import BottomNavBar from "~/components/BottomNavBar";
-import { Error, Loading } from "~/components/loading";
-import { api } from "~/utils/api";
 import { type NextPage } from "next";
-import { useRouter } from 'next/router';
-import { toast } from 'react-hot-toast';
-import { GoTriangleDown, GoTriangleUp } from "react-icons/go";
-import MealSuggestionModal from '~/components/MealSuggestionModal';
+import { useRouter } from "next/router";
+import { useEffect, useMemo, useState } from "react";
+import toast from "react-hot-toast";
+import { FiChevronDown, FiChevronUp, FiShuffle } from "react-icons/fi";
+import PageShell from "~/components/layout/PageShell";
+import { ErrorState, Loading } from "~/components/loading";
+import MealSuggestionModal from "~/components/MealSuggestionModal";
+import { api, type RouterOutputs } from "~/utils/api";
+import { formatDayHeading, isDateKey, parseDateKey, relativeDayLabel, todayKey } from "~/lib/dates";
+import { extractIngredients, mealTypes, timeOptions, type MealType } from "~/lib/meals";
 
-import { FiClock, FiMessageSquare } from 'react-icons/fi';
+type Meal = RouterOutputs["meal"]["getAll"][number];
+type Mode = "meal" | "event";
 
-interface Ingredient {
-  id: string;
-  name: string;
-}
-
-interface Meal {
-  id: string;
-  createdAt: Date;
-  name: string;
-  description: string | null;
-  ingredient1: string | null;
-  ingredient2: string | null;
-  ingredient3: string | null;
-  ingredient4: string | null;
-  ingredient5: string | null;
-  ingredient6: string | null;
-  ingredient7: string | null;
-  ingredient8: string | null;
-  ingredient9: string | null;
-  ingredient10: string | null;
-  ingredient11: string | null;
-  ingredient12: string | null;
-  ingredient13: string | null;
-  ingredient14: string | null;
-  ingredient15: string | null;
-  categories: string[];
-  completed: boolean;
-  type: typeof mealTypes[number];
-}
-
-const mealTypes = [
-  "Nudelgerichte",
-  "Kartoffelgerichte",
-  "Reisgerichte",
-  "andere Hauptgerichte",
-  "Backen",
-  "Frühstück",
-  "Snacks",
-  "Salate",
-  "Suppen",
-] as const;
-
-const extractIngredients = (meal: Meal): Ingredient[] => {
-  const ingredients: Ingredient[] = [];
-  for (let i = 1; i <= 15; i++) {
-    const ingredientKey = `ingredient${i}` as keyof Meal;
-    const ingredient = meal[ingredientKey];
-    if (typeof ingredient === 'string') {
-      ingredients.push({ id: ingredientKey, name: ingredient });
-    }
-  }
-  return ingredients;
-};
-
-// Local components
-const TimeSelector = ({ selectedTime, onChange }: { selectedTime: string, onChange: (time: string) => void }) => {
-  const timeOptions = {
-    "Frühstück": "09:00",
-    "Mittags": "13:00",
-    "Abends": "19:00",
-  };
-
-  return (
-    <div className="space-y-3">
-      <div className="flex items-center gap-2 mb-2">
-        <FiClock className="text-primary-100 text-lg" />
-        <span className="text-white font-medium">Uhrzeit</span>
-      </div>
-      <div className="flex gap-2 mb-3">
-        {Object.entries(timeOptions).map(([label, time]) => (
-          <button
-            key={label}
-            type="button"
-            onClick={() => onChange(time)}
-            className={`flex-1 p-2 rounded-lg transition-all duration-200 ${
-              selectedTime.endsWith(time)
-                ? 'bg-primary-100 text-white'
-                : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-            }`}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-      <input
-        type="datetime-local"
-        value={selectedTime}
-        onChange={(e) => onChange(e.target.value)}
-        className="w-full p-2 bg-gray-700 text-white rounded-lg border border-gray-600 focus:border-primary-100 focus:outline-none"
-      />
-    </div>
-  );
-};
-
-const DescriptionField = ({ description, onChange }: { description: string, onChange: (value: string) => void }) => (
-  <div className="space-y-2">
-    <div className="flex items-center gap-2">
-      <FiMessageSquare className="text-primary-100 text-lg" />
-      <span className="text-white font-medium">Beschreibung</span>
-    </div>
-    <textarea
-      className="w-full p-3 bg-gray-700 text-white rounded-lg border border-gray-600 focus:border-primary-100 focus:outline-none resize-none"
-      placeholder="Beschreibung (optional)"
-      value={description}
-      onChange={(e) => onChange(e.target.value)}
-      rows={3}
-    />
-  </div>
-);
+const SPECIAL_TOPIC = "9e4io1e";
 
 const AddEvent: NextPage = () => {
   const router = useRouter();
-  const { date } = router.query;
-  const dateString = typeof date === "string" ? date : new Date().toISOString().slice(0, 10);
+  const utils = api.useContext();
+  const routeDate = router.query.date;
+  const dateKey = isDateKey(routeDate) ? routeDate : todayKey();
 
-  const [type, setType] = useState<string>('');
-  const [title, setTitle] = useState<string>('');
-  const [description, setDescription] = useState<string>('');
-  const [eventTime, setEventTime] = useState<string>(`${dateString}T10:00`);
-  const [mealID, setMealID] = useState<string>('');
-  const [ingredients, setIngredients] = useState<Ingredient[]>([]);
-  const [showIngredients, setShowIngredients] = useState<boolean>(false);
-  
-  const [isSuggestionModalOpen, setIsSuggestionModalOpen] = useState(false);
-  const [selectedMealType, setSelectedMealType] = useState<typeof mealTypes[number] | ''>('');
+  const [mode, setMode] = useState<Mode>("meal");
+  const [date, setDate] = useState(dateKey);
+  const [time, setTime] = useState<string>(timeOptions.Abends);
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [mealId, setMealId] = useState("");
+  const [showIngredients, setShowIngredients] = useState(false);
+
+  const [suggestionType, setSuggestionType] = useState<MealType | "">("");
   const [suggestedMeal, setSuggestedMeal] = useState<{ id: string; name: string } | null>(null);
+  const [suggestionOpen, setSuggestionOpen] = useState(false);
 
-  const { data, isLoading } = api.meal.getAll.useQuery();
-  const formattedDate = new Date(date as string).toLocaleDateString('de-DE', { weekday: 'long', day: '2-digit', month: '2-digit' });
+  // router.query is empty on the first render of a hard load — sync once ready.
+  useEffect(() => {
+    if (router.isReady) setDate(isDateKey(routeDate) ? routeDate : todayKey());
+  }, [router.isReady, routeDate]);
 
-  const { mutate: createEvent, isLoading: isPosting } = api.post.create.useMutation({
-    onSuccess: () => {
-      toast.success("Erfolgreich hinzugefügt!");
-      
-      if (title === "9e4io1e") {
-        const potentialDate = new Date(eventTime);
-        potentialDate.setDate(potentialDate.getDate() + 30);
-        
-        createPotentialEvent({
-          mealID: "",
+  const { data: meals, isLoading, isError, refetch } = api.meal.getAll.useQuery();
+  const selectedMeal = useMemo(() => meals?.find((m) => m.id === mealId) ?? null, [meals, mealId]);
+  const ingredients = useMemo(() => (selectedMeal ? extractIngredients(selectedMeal) : []), [selectedMeal]);
+
+  const create = api.post.create.useMutation();
+
+  const mealsOfType = (type: MealType) => meals?.filter((m) => m.type === type) ?? [];
+  const randomMeal = (type: MealType) => {
+    const list = mealsOfType(type);
+    const pick = list[Math.floor(Math.random() * list.length)];
+    return pick ? { id: pick.id, name: pick.name } : null;
+  };
+
+  const chooseMeal = (meal: Meal | null) => {
+    setMealId(meal?.id ?? "");
+    setTitle(meal?.name ?? "");
+    setDescription(meal?.description ?? "");
+  };
+
+  const openSuggestion = (type: string) => {
+    if (!(mealTypes as readonly string[]).includes(type)) return;
+    setSuggestionType(type as MealType);
+    setSuggestedMeal(randomMeal(type as MealType));
+    setSuggestionOpen(true);
+  };
+
+  const canSave = mode === "meal" ? mealId !== "" : title.trim() !== "";
+
+  const handleSubmit = async () => {
+    if (!canSave || !isDateKey(date) || !/^\d{2}:\d{2}$/.test(time)) return;
+    const eventDate = parseDateKey(date);
+    const [h, m] = time.split(":").map(Number);
+    eventDate.setHours(h ?? 0, m ?? 0, 0, 0);
+
+    try {
+      await create.mutateAsync({
+        mealID: mode === "meal" ? mealId : undefined,
+        eventType: mode,
+        topic: mode === "meal" ? (selectedMeal?.name ?? title) : title.trim(),
+        content: description,
+        eventDate,
+      });
+
+      if (mode === "event" && title.trim() === SPECIAL_TOPIC) {
+        const potential = new Date(eventDate);
+        potential.setDate(potential.getDate() + 30);
+        await create.mutateAsync({
           eventType: "event",
-          topic: "Potentiell 9e4io1e",
-          content: `Referenz: ${new Date(eventTime).toLocaleDateString('de-DE')}`,
-          eventDate: potentialDate,
-          ingredients: []
+          topic: `Potentiell ${SPECIAL_TOPIC}`,
+          content: `Referenz: ${eventDate.toLocaleDateString("de-DE")}`,
+          eventDate: potential,
         });
       }
-      
+
+      toast.success(mode === "meal" ? "Mahlzeit geplant" : "Termin gespeichert");
+      void utils.post.invalidate();
+      void utils.groceryList.invalidate();
       void router.push("/");
-    },
-    onError: (e) => {
-      const errorMessage = e.data?.zodError?.fieldErrors.content;
-      if (errorMessage?.[0]) {
-        toast.error(errorMessage[0]);
-      } else {
-        toast.error("Fehler beim Hinzufügen");
-      }
-    },
-  });
-
-  const { mutate: createPotentialEvent } = api.post.create.useMutation();
-
-  const getMealsByType = (type: typeof mealTypes[number]) => {
-    if (!data) return [];
-    return data.filter(meal => meal.type === type);
-  };
-
-  const getRandomMeal = (type: typeof mealTypes[number]) => {
-    const mealsOfType = getMealsByType(type);
-    if (mealsOfType.length === 0) return null;
-    const randomIndex = Math.floor(Math.random() * mealsOfType.length);
-    const meal = mealsOfType[randomIndex];
-    if (!meal) return null;
-    return { id: meal.id, name: meal.name };
-  };
-
-  const handleMealTypeSelect = (type: string) => {
-    if (!type) return;
-    
-    if (mealTypes.includes(type as typeof mealTypes[number])) {
-      setSelectedMealType(type as typeof mealTypes[number]);
-      const randomMeal = getRandomMeal(type as typeof mealTypes[number]);
-      setSuggestedMeal(randomMeal);
-      setIsSuggestionModalOpen(true);
+    } catch (e) {
+      toast.error(e instanceof Error && e.message ? e.message : "Fehler beim Speichern");
     }
   };
 
-  const handleShuffle = () => {
-    if (selectedMealType) {
-      const randomMeal = getRandomMeal(selectedMealType);
-      setSuggestedMeal(randomMeal);
-    }
-  };
-
-  const handleAcceptSuggestion = (mealId: string) => {
-    const selectedMeal = data?.find(meal => meal.id === mealId);
-    if (selectedMeal && 'type' in selectedMeal) {
-      setType("meal");
-      setTitle(selectedMeal.name);
-      setMealID(selectedMeal.id);
-      if (selectedMeal.description) {
-        setDescription(selectedMeal.description);
-      }
-      const extractedIngredients = extractIngredients(selectedMeal as Meal);
-      setIngredients(extractedIngredients);
-    }
-    setIsSuggestionModalOpen(false);
-  };
-
-  const handleTimeChange = (time: string) => {
-    if (typeof date === 'string' && time.length === 5) {
-      setEventTime(`${date}T${time}`);
-    } else {
-      setEventTime(time);
-    }
-  };
-
-  const handleSubmit = () => {
-    const eventDate = new Date(eventTime);
-  
-    const mutationData = {
-      mealID,
-      eventType: type || "event",
-      topic: title,
-      content: description || "-",
-      eventDate,
-      ingredients, 
-    };
-  
-    createEvent(mutationData);
-  };
-
-  if (isLoading) return <Loading />;
-  if(!data) return <Error />;
+  const { weekday, dayMonth } = formatDayHeading(date);
+  const relative = relativeDayLabel(date);
 
   return (
-    <div className="flex flex-col items-center p-4 pt-14 min-h-screen bg-primary-400">
-      <h1 className="text-3xl font-bold mb-6 text-white">{formattedDate}</h1>
-      
-      <div className="w-full max-w-md bg-primary-400 rounded-xl shadow-lg">
-        <form onSubmit={(e) => e.preventDefault()} className="space-y-6">
-          <div className="bg-gray-800 rounded-xl p-6">
-            <div className="mb-6">
-              <label className="block text-white font-bold mb-4">
-                Mahlzeit auswählen
-              </label>
-              <select
-                className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline mb-4"
-                onChange={(e) => handleMealTypeSelect(e.target.value)}
-                value={selectedMealType}
-              >
-                <option value="">Kategorie wählen für Vorschlag</option>
-                {mealTypes.map((type) => (
-                  <option key={type} value={type}>{type}</option>
-                ))}
-              </select>
-
-              <select
-                className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                id="meal"
-                onChange={(e) => {
-                  const selectedMeal = data?.find(meal => meal.id === e.target.value);
-                  if (selectedMeal) {
-                    setType("meal");
-                    setTitle(selectedMeal.name);
-                    setMealID(selectedMeal.id);
-                    if (selectedMeal.description) {
-                      setDescription(selectedMeal.description);
-                    }
-                    const extractedIngredients = extractIngredients(selectedMeal as Meal);
-                    setIngredients(extractedIngredients);
-                  } else {
-                    setType('');
-                    setTitle('');
-                    setIngredients([]);
-                  }
-                }}
-              >
-                <option value="">Oder direkt eine Mahlzeit wählen</option>
-                {mealTypes.map((type) => {
-                  const mealsOfType = data?.filter(meal => meal.type === type) ?? [];
-                  if (mealsOfType.length === 0) return null;
-                  
-                  return (
-                    <optgroup key={type} label={type}>
-                      {mealsOfType.map((meal) => (
-                        <option key={meal.id} value={meal.id}>
-                          {meal.name}
-                        </option>
-                      ))}
-                    </optgroup>
-                  );
-                })}
-              </select>
-            </div>
-
-            <TimeSelector selectedTime={eventTime} onChange={handleTimeChange} />
-
-            {mealID && (
-              <div className="mt-4 p-4 bg-gray-700 rounded-lg">
-                <button
-                  type="button"
-                  className="flex items-center justify-between w-full text-white"
-                  onClick={() => setShowIngredients(!showIngredients)}
+    <PageShell
+      title="Hinzufügen"
+      heading={
+        <span>
+          {weekday}, {dayMonth}
+          {relative && <span className="ml-2 text-base font-medium text-primary-100">{relative}</span>}
+        </span>
+      }
+      activePage="calendar"
+      subheader={
+        <div className="segmented">
+          <button type="button" className={mode === "meal" ? "active" : ""} onClick={() => setMode("meal")}>
+            Mahlzeit
+          </button>
+          <button type="button" className={mode === "event" ? "active" : ""} onClick={() => setMode("event")}>
+            Termin
+          </button>
+        </div>
+      }
+    >
+      {isLoading ? (
+        <Loading />
+      ) : isError || !meals ? (
+        <ErrorState onRetry={() => void refetch()} />
+      ) : (
+        <form
+          className="space-y-4"
+          onSubmit={(e) => {
+            e.preventDefault();
+            void handleSubmit();
+          }}
+        >
+          {mode === "meal" ? (
+            <div className="card space-y-4">
+              <div>
+                <label className="label" htmlFor="meal-select">
+                  Mahlzeit
+                </label>
+                <select
+                  id="meal-select"
+                  className={`input ${mealId ? "" : "text-muted"}`}
+                  value={mealId}
+                  onChange={(e) => chooseMeal(meals.find((m) => m.id === e.target.value) ?? null)}
                 >
-                  <span>{showIngredients ? "Zutaten verbergen" : "Zutaten anzeigen"}</span>
-                  {showIngredients ? <GoTriangleUp /> : <GoTriangleDown />}
-                </button>
-                {showIngredients && (
-                  <div className="mt-3 space-y-2 pl-4">
-                    {ingredients.map((ingredient) => (
-                      <div key={ingredient.id} className="text-gray-300">
-                        • {ingredient.name}
-                      </div>
-                    ))}
-                  </div>
-                )}
+                  <option value="">Mahlzeit wählen…</option>
+                  {mealTypes.map((type) => {
+                    const list = mealsOfType(type);
+                    if (list.length === 0) return null;
+                    return (
+                      <optgroup key={type} label={type}>
+                        {list.map((meal) => (
+                          <option key={meal.id} value={meal.id}>
+                            {meal.name}
+                          </option>
+                        ))}
+                      </optgroup>
+                    );
+                  })}
+                </select>
               </div>
-            )}
+
+              <div>
+                <label className="label" htmlFor="suggest-select">
+                  <FiShuffle className="mr-1 inline" /> Oder Vorschlag aus Kategorie
+                </label>
+                <select
+                  id="suggest-select"
+                  className="input text-muted"
+                  value=""
+                  onChange={(e) => openSuggestion(e.target.value)}
+                >
+                  <option value="">Kategorie wählen…</option>
+                  {mealTypes.map((type) => (
+                    <option key={type} value={type} disabled={mealsOfType(type).length === 0}>
+                      {type} ({mealsOfType(type).length})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {selectedMeal && (
+                <div className="card-2">
+                  <button
+                    type="button"
+                    className="flex w-full items-center justify-between text-sm text-gray-200"
+                    onClick={() => setShowIngredients(!showIngredients)}
+                  >
+                    <span>
+                      {ingredients.length} Zutaten → Einkaufsliste
+                    </span>
+                    {showIngredients ? <FiChevronUp /> : <FiChevronDown />}
+                  </button>
+                  {showIngredients && (
+                    <ul className="mt-3 flex flex-wrap gap-1.5">
+                      {ingredients.map((ing) => (
+                        <li key={ing.id} className="chip-sm">
+                          {ing.name}
+                        </li>
+                      ))}
+                      {ingredients.length === 0 && <li className="text-xs text-muted">Keine Zutaten hinterlegt</li>}
+                    </ul>
+                  )}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="card space-y-4">
+              <div>
+                <label className="label" htmlFor="event-title">
+                  Titel
+                </label>
+                <input
+                  id="event-title"
+                  className="input"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="z.B. Zahnarzt"
+                  autoComplete="off"
+                />
+              </div>
+              <div>
+                <label className="label" htmlFor="event-desc">
+                  Beschreibung
+                </label>
+                <textarea
+                  id="event-desc"
+                  className="input resize-none"
+                  rows={3}
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Optional"
+                />
+              </div>
+            </div>
+          )}
+
+          <div className="card space-y-4">
+            <div>
+              <span className="label">Uhrzeit</span>
+              <div className="mb-2 flex gap-2">
+                {Object.entries(timeOptions).map(([label, value]) => (
+                  <button
+                    key={label}
+                    type="button"
+                    onClick={() => setTime(value)}
+                    className={`chip flex-1 justify-center ${time === value ? "chip-active" : ""}`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <input
+                  type="time"
+                  className="input"
+                  value={time}
+                  onChange={(e) => setTime(e.target.value)}
+                  aria-label="Uhrzeit"
+                />
+                <input
+                  type="date"
+                  className="input"
+                  value={date}
+                  onChange={(e) => e.target.value && setDate(e.target.value)}
+                  aria-label="Datum"
+                />
+              </div>
+            </div>
           </div>
 
-          <div className="relative py-5">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-600"></div>
-            </div>
-            <div className="relative flex justify-center">
-              <span className="bg-primary-400 px-4 text-sm text-gray-300">ODER</span>
-            </div>
-          </div>
-
-          <div className="bg-gray-800 rounded-xl p-6">
-            <div className="mb-6">
-              <label className="block text-white font-bold mb-2">
-                Titel Event
-              </label>
-              <input
-                className="w-full p-3 bg-gray-700 text-white rounded-lg border border-gray-600 focus:border-primary-100 focus:outline-none disabled:opacity-50"
-                type="text"
-                placeholder="Titel Event"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                disabled={type === "meal"}
-              />
-              <p className="text-gray-400 text-sm mt-2 ml-2">
-                z.B. &quot;9e4io1e&quot;
-              </p>
-            </div>
-
-            <DescriptionField description={description} onChange={setDescription} />
-          </div>
-
-          <button
-            className={`w-full p-4 rounded-xl font-medium transition-all duration-200 ${
-              !title || !eventTime
-                ? 'bg-gray-600 cursor-not-allowed'
-                : 'bg-primary-100 hover:bg-primary-200 active:transform active:scale-95'
-            }`}
-            onClick={handleSubmit}
-            disabled={!title || !eventTime || isPosting}
-          >
-            {isPosting ? 'Wird gespeichert...' : 'Speichern'}
+          <button type="submit" className="btn btn-primary w-full py-4 text-base" disabled={!canSave || create.isLoading}>
+            {create.isLoading ? "Wird gespeichert…" : "Speichern"}
           </button>
         </form>
-      </div>
+      )}
 
-      <MealSuggestionModal 
-        isOpen={isSuggestionModalOpen}
-        onClose={() => setIsSuggestionModalOpen(false)}
-        onAccept={handleAcceptSuggestion}
-        onShuffle={handleShuffle}
+      <MealSuggestionModal
+        isOpen={suggestionOpen}
+        category={suggestionType}
         suggestedMeal={suggestedMeal}
+        onClose={() => setSuggestionOpen(false)}
+        onShuffle={() => suggestionType && setSuggestedMeal(randomMeal(suggestionType))}
+        onAccept={(id) => {
+          chooseMeal(meals?.find((m) => m.id === id) ?? null);
+          setSuggestionOpen(false);
+        }}
       />
-
-      <div className="h-16" />
-      <BottomNavBar activePage='calendar' />
-    </div>
+    </PageShell>
   );
 };
 

@@ -1,98 +1,67 @@
 import { z } from "zod";
 import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
+import { DEFAULT_CATEGORY, groceryCategories, sortByCategory } from "~/lib/meals";
 
 export const groceryRouter = createTRPCRouter({
-  getAll: publicProcedure.query(({ ctx }) => {
-    return ctx.prisma.itemGroceryList.findMany();
+  /** All items (open and checked off), sorted by store category then name. */
+  getAll: publicProcedure.query(async ({ ctx }) => {
+    const items = await ctx.prisma.itemGroceryList.findMany();
+    return sortByCategory(items);
   }),
-
-    getAllOpen: publicProcedure.query(async ({ ctx }) => {
-      // Define the order of categories
-      const categoryOrder = [
-        "Obst & Gemüse",
-        "Frühstück",
-        "Snacks",
-        "Teigwaren",
-        "Backen",
-        "Milchprodukte",
-        "Kühlfach",
-        "Sonstiges",
-        "Haushalt"
-      ];
-  
-      const items = await ctx.prisma.itemGroceryList.findMany({
-        where: {
-          completed: false,
-        },
-        orderBy: {
-          category: 'asc', // Ensure items are ordered by category
-        },
-      });
-  
-      // Sort items by category order and then alphabetically by name within each category
-      items.sort((a, b) => {
-        const categoryAIndex = categoryOrder.indexOf(a.category);
-        const categoryBIndex = categoryOrder.indexOf(b.category);
-  
-        if (categoryAIndex !== categoryBIndex) {
-          return categoryAIndex - categoryBIndex;
-        }
-  
-        return a.name.localeCompare(b.name);
-      });
-  
-      return items;
-    }),
 
   create: publicProcedure
     .input(
       z.object({
+        name: z.string().trim().min(1).max(280),
         usageDate: z.string().min(1).max(280),
-        name: z.string().min(1).max(280),
-        reference: z.string().min(1).max(280),
-        completed: z.boolean().optional(),
-        category: z.string().min(1).max(280),
+        reference: z.string().min(1).max(280).default("Manuell"),
+        category: z.enum(groceryCategories).default(DEFAULT_CATEGORY),
       })
     )
-    .mutation(async ({ ctx, input }) => {
-      const item = await ctx.prisma.itemGroceryList.create({
+    .mutation(({ ctx, input }) => {
+      return ctx.prisma.itemGroceryList.create({
         data: {
           usageDate: input.usageDate,
           name: input.name,
           reference: input.reference,
-          completed: input.completed,
+          completed: false,
           category: input.category,
         },
       });
+    }),
 
-      return item;
+  /** Check / uncheck an item. Persisted so both phones see the same state. */
+  setCompleted: publicProcedure
+    .input(z.object({ id: z.string(), completed: z.boolean() }))
+    .mutation(({ ctx, input }) => {
+      return ctx.prisma.itemGroceryList.update({
+        where: { id: input.id },
+        data: { completed: input.completed },
+      });
+    }),
+
+  setManyCompleted: publicProcedure
+    .input(z.object({ ids: z.array(z.string()).min(1), completed: z.boolean() }))
+    .mutation(({ ctx, input }) => {
+      return ctx.prisma.itemGroceryList.updateMany({
+        where: { id: { in: input.ids } },
+        data: { completed: input.completed },
+      });
     }),
 
   delete: publicProcedure
-    .input(z.object({
-      id: z.string(),
-    }))
-    .mutation(async ({ ctx, input }) => {
-      const item = await ctx.prisma.itemGroceryList.delete({
-        where: {
-          id: input.id,
-        },
-      });
-
-      return item;
+    .input(z.object({ id: z.string() }))
+    .mutation(({ ctx, input }) => {
+      return ctx.prisma.itemGroceryList.delete({ where: { id: input.id } });
     }),
 
   deleteMany: publicProcedure
-    .input(z.object({
-      ids: z.array(z.string()).min(1),
-    }))
-    .mutation(async ({ ctx, input }) => {
-      const result = await ctx.prisma.itemGroceryList.deleteMany({
-        where: {
-          id: { in: input.ids },
-        },
-      });
-
-      return result;
+    .input(z.object({ ids: z.array(z.string()).min(1) }))
+    .mutation(({ ctx, input }) => {
+      return ctx.prisma.itemGroceryList.deleteMany({ where: { id: { in: input.ids } } });
     }),
+
+  deleteCompleted: publicProcedure.mutation(({ ctx }) => {
+    return ctx.prisma.itemGroceryList.deleteMany({ where: { completed: true } });
+  }),
 });
